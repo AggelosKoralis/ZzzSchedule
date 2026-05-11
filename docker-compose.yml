@@ -1,8 +1,12 @@
 services:
   flutter-dev:
-    build: .
+    build:
+      context: .
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
     container_name: flutter_docker
-    user: "${UID}:${GID}"
+    user: root
     privileged: true
     volumes:
       - .:/app

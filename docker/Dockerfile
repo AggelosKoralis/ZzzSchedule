@@ -23,8 +23,18 @@ RUN yes | sdkmanager --licenses
 # Install Platform Tools (ADB)
 RUN sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
+# Use an Argument that defaults to 1000 if not provided
+ARG UID=1000
+ARG GID=1000
+
 # Install Flutter
 RUN git clone https://github.com/flutter/flutter.git -b stable $FLUTTER_HOME
+
+# Use the variables instead of hardcoded numbers
+RUN chown -R ${UID}:${GID} $FLUTTER_HOME
+RUN git config --system --add safe.directory $FLUTTER_HOME
+
+# Install Flutter
 RUN flutter doctor
 
 WORKDIR /app
