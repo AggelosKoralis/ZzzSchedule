@@ -1,0 +1,15 @@
+services:
+  flutter-dev:
+    build: .
+    container_name: flutter_docker
+    user: "${UID}:${GID}"
+    privileged: true
+    volumes:
+      - .:/app
+      # Map local USB bus to the container
+      - /dev/bus/usb:/dev/bus/usb
+    network_mode: "host"
+    environment:
+      - DISPLAY=$DISPLAY
+    stdin_open: true
+    tty: true
