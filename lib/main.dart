@@ -65,7 +65,7 @@ class HomeScreen extends StatelessWidget {
                                             return Colors.red;
                                         }
 
-                                        return Colors.blue;
+                                        return Colors.blueAccent;
                                     },
                                 ),
                             ),
