@@ -7,8 +7,6 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:test_app/main.dart';
-
 void main() {
   testWidgets('Empty test to make it shut up', (WidgetTester tester) async {});
 }
