@@ -1,0 +1,12 @@
+services:
+  android-sdk:
+    build: .
+    tty: true
+    volumes:
+      - ./project:/home/developer/app
+      - sdk_data:/opt/android-sdk
+    environment:
+      - GRADLE_USER_HOME=/home/developer/app/.gradle
+
+volumes:
+  sdk_data:
