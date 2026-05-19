@@ -1,12 +1,14 @@
 services:
-  android-sdk:
+  android:
     build: .
-    tty: true
+    working_dir: /workspace
     volumes:
-      - ./project:/home/developer/app
-      - sdk_data:/opt/android-sdk
+      - .:/workspace
+      - gradle-cache:/home/gradle/.gradle
     environment:
-      - GRADLE_USER_HOME=/home/developer/app/.gradle
+      GRADLE_USER_HOME: /home/gradle/.gradle
+    stdin_open: true
+    tty: true
 
 volumes:
-  sdk_data:
+  gradle-cache:
