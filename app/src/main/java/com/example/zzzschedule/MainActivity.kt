@@ -28,6 +28,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+
+import com.example.myApp.login.LoginFileScreen
+
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +57,10 @@ private val TextSecondary = ComposeColor(0xFFCAC4D0)
 @Composable
 fun MyApp() {
 
+    var showHomePage by remember {
+        mutableStateOf(false)
+    }
+
     MaterialTheme(
         colorScheme = darkColorScheme(
             primary = Primary,
@@ -58,11 +69,24 @@ fun MyApp() {
             background = Background
         )
     ) {
+
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = Background
         ) {
-            HomePage()
+
+            if (showHomePage) {
+                HomePage()
+            } else {
+                LoginFileScreen(
+                    onContinue = { age, occupation, sleepHours ->
+
+                        // You can save data here later
+
+                        showHomePage = true
+                    }
+                )
+            }
         }
     }
 }
