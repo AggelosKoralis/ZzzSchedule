@@ -79,7 +79,7 @@ fun MyApp() {
                 HomePage()
             } else {
                 LoginFileScreen(
-                    onContinue = { age, occupation, sleepHours ->
+                    onContinue = { username, age, occupation, sleepHours ->
 
                         // You can save data here later
 

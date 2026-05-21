@@ -8,9 +8,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,11 +39,14 @@ private val TextSecondary = Color(0xFFCAC4D0)
 @Composable
 fun LoginFileScreen(
     onContinue: (
+        username: String,
         age: String,
         occupation: String,
         sleepHours: Float
     ) -> Unit
 ) {
+
+    var username by remember {mutableStateOf("")}
 
     var age by remember { mutableStateOf("") }
 
@@ -54,7 +59,7 @@ fun LoginFileScreen(
     }
 
     var sleepHours by remember {
-        mutableFloatStateOf(7.5f)
+        mutableFloatStateOf(7f)
     }
 
     var loading by remember {
@@ -63,82 +68,15 @@ fun LoginFileScreen(
 
     val occupations = listOf(
         "Student",
+        "Working Student",
         "Working Full Time",
         "Working Part Time",
-        "Unemployed"
+        "Unemployed",
+        "Select"
     )
 
     Scaffold(
-        containerColor = Background,
-
-        bottomBar = {
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.Transparent,
-                                Background.copy(alpha = 0.95f),
-                                Background
-                            )
-                        )
-                    )
-                    .padding(24.dp)
-            ) {
-
-                Button(
-                    onClick = {
-
-                        loading = true
-
-                        onContinue(
-                            age,
-                            occupation,
-                            sleepHours
-                        )
-                    },
-
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-
-                    shape = RoundedCornerShape(100.dp),
-
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Secondary,
-                        contentColor = Color(0xFF22005C)
-                    )
-                ) {
-
-                    if (loading) {
-
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.Black
-                        )
-
-                    } else {
-
-                        Text(
-                            text = "Looks Good",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = null
-                        )
-                    }
-                }
-            }
-        }
+        containerColor = Background
     ) { padding ->
 
         Column(
@@ -150,47 +88,16 @@ fun LoginFileScreen(
                 .padding(horizontal = 24.dp)
         ) {
 
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // HEADER
-
-//            Column {
-//
-//                Row(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    horizontalArrangement = Arrangement.SpaceBetween
-//                ) {
-//
-//                    Text(
-//                        text = "something something",
-//                        color = Primary,
-//                        fontSize = 24.sp,
-//                        fontWeight = FontWeight.Bold
-//                    )
-//                }
-//
-//                Spacer(modifier = Modifier.height(16.dp))
-//
-//                LinearProgressIndicator(
-//                    progress = { 0.5f },
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .height(6.dp)
-//                        .clip(RoundedCornerShape(100.dp)),
-//                    color = Secondary,
-//                    trackColor = SurfaceHigh
-//                )
-//            }
-//
-//            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             // TITLE
 
             Text(
-                text = "Let's build your rhythm.",
+                text = "Let's adjust your rhythm.",
                 color = TextPrimary,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 36.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -202,7 +109,7 @@ fun LoginFileScreen(
                 lineHeight = 24.sp
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // MAIN CARD
 
@@ -221,36 +128,38 @@ fun LoginFileScreen(
                     .padding(24.dp)
             ) {
 
-                // AGE
+                // USERNAME
 
                 Text(
-                    text = "How old are you?",
+                    text = "What should we call you?",
                     color = Primary,
                     fontWeight = FontWeight.Medium
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 OutlinedTextField(
-                    value = age,
-                    onValueChange = { age = it },
+                    value = username,
+                    onValueChange = { username = it },
 
                     modifier = Modifier.fillMaxWidth(),
 
                     placeholder = {
-                        Text("Enter your age")
+                        Text("Enter your username")
                     },
 
                     trailingIcon = {
                         Icon(
-                            imageVector = Icons.Default.Cake,
+                            imageVector = Icons.Default.AccountCircle,
                             contentDescription = null
                         )
                     },
 
                     shape = RoundedCornerShape(
-                        topStart = 18.dp,
-                        topEnd = 18.dp
+                        topStart = 14.dp,
+                        topEnd = 14.dp,
+                        bottomStart = 14.dp,
+                        bottomEnd = 14.dp
                     ),
 
                     singleLine = true,
@@ -265,7 +174,55 @@ fun LoginFileScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(22.dp))
+
+                // AGE
+
+                Text(
+                    text = "How old are you?",
+                    color = Primary,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                OutlinedTextField(
+                    value = age,
+                    onValueChange = { age = it },
+
+                    modifier = Modifier.fillMaxWidth(),
+
+                    placeholder = {
+                        Text("Enter your age")
+                    },
+
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = null
+                        )
+                    },
+
+                    shape = RoundedCornerShape(
+                        topStart = 14.dp,
+                        topEnd = 14.dp,
+                        bottomStart = 14.dp,
+                        bottomEnd = 14.dp
+                    ),
+
+                    singleLine = true,
+
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Outline,
+                        focusedContainerColor = SurfaceLow,
+                        unfocusedContainerColor = SurfaceLow,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(22.dp))
 
                 // OCCUPATION
 
@@ -275,7 +232,7 @@ fun LoginFileScreen(
                     fontWeight = FontWeight.Medium
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 ExposedDropdownMenuBox(
                     expanded = expanded,
@@ -302,8 +259,10 @@ fun LoginFileScreen(
                             .fillMaxWidth(),
 
                         shape = RoundedCornerShape(
-                            topStart = 18.dp,
-                            topEnd = 18.dp
+                            topStart = 14.dp,
+                            topEnd = 14.dp,
+                            bottomStart = 14.dp,
+                            bottomEnd = 14.dp
                         ),
 
                         colors = OutlinedTextFieldDefaults.colors(
@@ -345,13 +304,13 @@ fun LoginFileScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
-                // SLEEP
+                // SLEEP SLIDER
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    //horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom
                 ) {
 
@@ -361,18 +320,20 @@ fun LoginFileScreen(
                         fontWeight = FontWeight.Medium
                     )
 
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     Row(
                         verticalAlignment = Alignment.Bottom
                     ) {
 
                         Text(
-                            text = String.format("%.1f", sleepHours),
+                            text = sleepHours.toInt().toString(),
                             color = Secondary,
-                            fontSize = 32.sp,
+                            fontSize = 26.sp,
                             fontWeight = FontWeight.Bold
                         )
 
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         Text(
                             text = "hours",
@@ -381,7 +342,7 @@ fun LoginFileScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Slider(
                     value = sleepHours,
@@ -411,6 +372,44 @@ fun LoginFileScreen(
                     Text("8h", color = Outline)
 
                     Text("12h", color = Outline)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        loading = true
+                        onContinue(username, age, occupation, sleepHours)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(100.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Secondary,
+                        contentColor = Color(0xFF22005C)
+                    )
+                ) {
+                    if (loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.Black
+                        )
+                    } else {
+                        Text(
+                            text = "Looks Good",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null
+                        )
+                    }
                 }
             }
         }
