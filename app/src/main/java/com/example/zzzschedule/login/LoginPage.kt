@@ -1,4 +1,4 @@
-package com.example.myApp.login
+package com.example.zzzschedule.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,7 +37,7 @@ private val TextSecondary = Color(0xFFCAC4D0)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginFileScreen(
+fun LoginPageScreen(
     onContinue: (
         username: String,
         age: String,
@@ -315,7 +315,7 @@ fun LoginFileScreen(
                 ) {
 
                     Text(
-                        text = "Average night sleep",
+                        text = "Average night sleep:",
                         color = Primary,
                         fontWeight = FontWeight.Medium
                     )
@@ -376,6 +376,8 @@ fun LoginFileScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // LOOKS GOOD BUTTON
+
                 Button(
                     onClick = {
                         loading = true
@@ -400,7 +402,7 @@ fun LoginFileScreen(
                         Text(
                             text = "Looks Good",
                             fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold
                         )
 
                         Spacer(modifier = Modifier.width(12.dp))
