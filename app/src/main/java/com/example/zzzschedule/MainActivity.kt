@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
+import com.example.zzzschedule.home.HomePageNoTaskScreen
 import com.example.zzzschedule.login.LoginPageScreen
 import com.example.zzzschedule.home.HomePageScreen
 
@@ -77,7 +78,7 @@ fun MyApp() {
         ) {
 
             if (showHomePage) {
-                HomePageScreen()
+                HomePageNoTaskScreen()
             } else {
                 LoginPageScreen(
                     onContinue = { username, age, occupation, sleepHours ->
