@@ -42,7 +42,7 @@ fun LoginPageScreen(
         username: String,
         age: String,
         occupation: String,
-        sleepHours: Float
+        sleepHours: Int
     ) -> Unit
 ) {
 
@@ -155,12 +155,7 @@ fun LoginPageScreen(
                         )
                     },
 
-                    shape = RoundedCornerShape(
-                        topStart = 14.dp,
-                        topEnd = 14.dp,
-                        bottomStart = 14.dp,
-                        bottomEnd = 14.dp
-                    ),
+                    shape = RoundedCornerShape(14.dp),
 
                     singleLine = true,
 
@@ -203,12 +198,7 @@ fun LoginPageScreen(
                         )
                     },
 
-                    shape = RoundedCornerShape(
-                        topStart = 14.dp,
-                        topEnd = 14.dp,
-                        bottomStart = 14.dp,
-                        bottomEnd = 14.dp
-                    ),
+                    shape = RoundedCornerShape(14.dp),
 
                     singleLine = true,
 
@@ -258,12 +248,7 @@ fun LoginPageScreen(
                             .menuAnchor()
                             .fillMaxWidth(),
 
-                        shape = RoundedCornerShape(
-                            topStart = 14.dp,
-                            topEnd = 14.dp,
-                            bottomStart = 14.dp,
-                            bottomEnd = 14.dp
-                        ),
+                        shape = RoundedCornerShape(14.dp),
 
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Primary,
@@ -381,7 +366,7 @@ fun LoginPageScreen(
                 Button(
                     onClick = {
                         loading = true
-                        onContinue(username, age, occupation, sleepHours)
+                        onContinue(username, age, occupation, sleepHours.toInt())
                     },
                     modifier = Modifier
                         .fillMaxWidth()
