@@ -52,7 +52,7 @@ fun AppNavigation() {
             },
             // Push back when returning from Add Task
             popEnterTransition = {
-                slideInVertically(initialOffsetY = { it }, animationSpec = tween(300))
+                slideInVertically(initialOffsetY = { it }, animationSpec = tween(0))
             }
         ) {
             HomePageNoTaskScreen(
@@ -67,7 +67,7 @@ fun AppNavigation() {
             route = "add_task",
             // Bottom Sheet/Full Screen slide up from the bottom
             enterTransition = {
-                slideInVertically(initialOffsetY = { it }, animationSpec = tween(300)) + fadeIn(animationSpec = tween(150))
+                slideInVertically(initialOffsetY = { it }, animationSpec = tween(300))
             },
             // Slide back down
             popExitTransition = {
