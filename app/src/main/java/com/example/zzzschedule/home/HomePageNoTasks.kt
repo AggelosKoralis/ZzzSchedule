@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color as ComposeColor
+import kotlin.math.pow
 
 
 private val Background = Color(0xFF141317)
@@ -40,13 +41,15 @@ private val Outline = Color(0xFF49454F)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePageNoTaskScreen(
-
+    username: String = "",
+    age: String = "",
+    occupation: String = "",
+    sleepHours: Int = 8,
     onHomeClick: () -> Unit = {},
     onScheduleClick: () -> Unit = {},
     onInsightsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onAddTaskClick: () -> Unit = {}
-
 ) {
 
     Scaffold(
@@ -57,7 +60,7 @@ fun HomePageNoTaskScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Daily Overview",
+                        text = if (username.isNotEmpty()) "Hi, $username!" else "Daily Overview",
                         color = Primary,
                         fontSize = 34.sp,
                         fontWeight = FontWeight.Bold
@@ -214,7 +217,9 @@ fun HomePageNoTaskScreen(
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
-                                text = "Based on last night's rest",
+                                text = if (occupation.isNotEmpty() && occupation != "Select") 
+                                    "Based on your lifestyle"
+                                    else "Based on last night's rest",
                                 color = TextSecondary
                             )
                         }
@@ -238,8 +243,10 @@ fun HomePageNoTaskScreen(
                             contentAlignment = Alignment.Center
                         ) {
 
+                            val energyProgress = calculateEnergy(sleepHours.toFloat())
+
                             CircularProgressIndicator(
-                                progress = { 0.72f },
+                                progress = { energyProgress },
                                 modifier = Modifier.size(140.dp),
                                 strokeWidth = 12.dp,
                                 color = Primary,
@@ -247,7 +254,7 @@ fun HomePageNoTaskScreen(
                             )
 
                             Text(
-                                text = "72%",
+                                text = "${(energyProgress * 100).toInt()}%",
                                 color = Primary,
                                 fontSize = 46.sp,
                                 fontWeight = FontWeight.Bold
@@ -328,4 +335,20 @@ fun HomePageNoTaskScreen(
 //            Spacer(modifier = Modifier.height(120.dp))
         }
     }
+}
+
+fun calculateEnergy(sleepHours: Float): Float {
+    // We clip the input between 0 and 12 hours just to keep bounds safe
+    val hours = sleepHours.coerceIn(0f, 12f)
+
+    // Centers the curve around 6.5 hours and controls the steepness
+    val midpoint = 6.5f
+    val steepness = 1.2f
+
+    val k = (hours - midpoint) * steepness
+    val sigmoid = (k / (1f + kotlin.math.abs(k))) // Fast sigmoid approximation
+
+    // Normalize the result so that 4h feels low (~15%) and 8h feels great (~90%)
+    // Then coerce to make sure it's strictly between 0.0 and 1.0
+    return ((sigmoid + 1f) / 2f).coerceIn(0f, 1f)
 }

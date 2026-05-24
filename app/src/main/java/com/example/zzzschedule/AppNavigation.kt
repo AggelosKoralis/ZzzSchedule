@@ -8,9 +8,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 
 import com.example.zzzschedule.home.AddTaskScreen
 import com.example.zzzschedule.home.HomePageNoTaskScreen
@@ -36,7 +38,7 @@ fun AppNavigation() {
         ) {
             LoginPageScreen(
                 onContinue = { username, age, occupation, sleepHours ->
-                    navController.navigate("home") {
+                    navController.navigate("home?username=$username&age=$age&occupation=$occupation&sleepHours=$sleepHours") {
                         popUpTo("login") { inclusive = true }
                     }
                 }
@@ -45,7 +47,16 @@ fun AppNavigation() {
 
         // 2. HOME ROUTE
         composable(
-            route = "home",
+            route = "home?username={username}&age={age}&occupation={occupation}&sleepHours={sleepHours}",
+            arguments = listOf(
+                navArgument("username") { defaultValue = "" },
+                navArgument("age") { defaultValue = "" },
+                navArgument("occupation") { defaultValue = "" },
+                navArgument("sleepHours") { 
+                    type = NavType.IntType
+                    defaultValue = 8 
+                }
+            ),
             // Horizontal slide-in from the right
             enterTransition = {
                 slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) + fadeIn(animationSpec = tween(150))
@@ -54,8 +65,17 @@ fun AppNavigation() {
             popEnterTransition = {
                 slideInVertically(initialOffsetY = { it }, animationSpec = tween(0))
             }
-        ) {
+        ) { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            val age = backStackEntry.arguments?.getString("age") ?: ""
+            val occupation = backStackEntry.arguments?.getString("occupation") ?: ""
+            val sleepHours = backStackEntry.arguments?.getInt("sleepHours") ?: 8
+
             HomePageNoTaskScreen(
+                username = username,
+                age = age,
+                occupation = occupation,
+                sleepHours = sleepHours,
                 onAddTaskClick = {
                     navController.navigate("add_task")
                 }
