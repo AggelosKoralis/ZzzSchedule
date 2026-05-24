@@ -319,7 +319,7 @@ fun LoginPageScreen(
                         .height(56.dp),
                     shape = RoundedCornerShape(100.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Secondary,
+                        containerColor = Primary,
                         contentColor = Color(0xFF22005C)
                     )
                 ) {

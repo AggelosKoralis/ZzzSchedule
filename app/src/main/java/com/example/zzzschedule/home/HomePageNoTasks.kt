@@ -106,7 +106,7 @@ fun HomePageNoTaskScreen(
 
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color(0xFF22005C),
-                        selectedTextColor = Color(0xFF22005C),
+                        selectedTextColor = Secondary,
                         indicatorColor = Secondary,
                         unselectedIconColor = TextSecondary,
                         unselectedTextColor = TextSecondary
