@@ -1,5 +1,6 @@
 package com.example.zzzschedule.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -24,6 +25,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color as ComposeColor
 import kotlin.math.pow
 
+data class Task(
+    val title: String,
+    val startTime: String,
+    val endTime: String,
+    val priority: String,
+    val repeat: String,
+)
+
 
 private val Background = Color(0xFF141317)
 private val Surface = Color(0xFF201F23)
@@ -45,6 +54,7 @@ fun HomePageNoTaskScreen(
     age: String = "",
     occupation: String = "",
     sleepHours: Int = 8,
+    tasks: List<Task> = emptyList(),
     onHomeClick: () -> Unit = {},
     onScheduleClick: () -> Unit = {},
     onInsightsClick: () -> Unit = {},
@@ -266,69 +276,113 @@ fun HomePageNoTaskScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // EMPTY SCHEDULE SECTION
+            if (tasks.isEmpty()) {
+                // EMPTY SCHEDULE SECTION
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 30.dp),
-
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-                Box(
+                Column(
                     modifier = Modifier
-                        .size(90.dp)
-                        .clip(CircleShape)
-                        .background(SurfaceHigh),
+                        .fillMaxWidth()
+                        .padding(vertical = 30.dp),
 
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-                    Icon(
-                        imageVector = Icons.Default.EventAvailable,
-                        contentDescription = null,
-                        tint = Primary,
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .clip(CircleShape)
+                            .background(SurfaceHigh),
 
-                Spacer(modifier = Modifier.height(20.dp))
+                        contentAlignment = Alignment.Center
+                    ) {
 
-                Text(
-                    text = "Your schedule is clear today",
-                    color = TextPrimary,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                        Icon(
+                            imageVector = Icons.Default.EventAvailable,
+                            contentDescription = null,
+                            tint = Primary,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-
-                    onClick = onAddTaskClick,
-
-                    shape = RoundedCornerShape(100.dp),
-
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Primary,
-                        contentColor = Color(0xFF37265E)
-                    ),
-
-                    modifier = Modifier.height(56.dp)
-                ) {
-
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Add Task",
+                        text = "Your schedule is clear today",
+                        color = TextPrimary,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+
+                        onClick = onAddTaskClick,
+
+                        shape = RoundedCornerShape(100.dp),
+
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Primary,
+                            contentColor = Color(0xFF37265E)
+                        ),
+
+                        modifier = Modifier.height(56.dp)
+                    ) {
+
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            text = "Add Task",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            } else {
+                // TASKS LIST
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Today's Schedule",
+                        color = TextPrimary,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.SemiBold
                     )
+
+                    IconButton(onClick = onAddTaskClick) {
+                        Icon(
+                            imageVector = Icons.Default.AddCircle,
+                            contentDescription = "Add Task",
+                            tint = Primary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                val sortedTasks = tasks.sortedBy { it.startTime }
+
+                sortedTasks.forEach { task ->
+                    TaskCard(
+                        title = task.title,
+                        time = "${task.startTime} - ${task.endTime}",
+                        priority = task.priority.uppercase(),
+                        priorityColor = when (task.priority) {
+                            "High" -> ComposeColor.Red
+                            "Medium" -> ComposeColor(0xFF7E57C2)
+                            else -> ComposeColor.Gray
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
 
@@ -351,4 +405,128 @@ fun calculateEnergy(sleepHours: Float): Float {
     // Normalize the result so that 4h feels low (~15%) and 8h feels great (~90%)
     // Then coerce to make sure it's strictly between 0.0 and 1.0
     return ((sigmoid + 1f) / 2f).coerceIn(0f, 1f)
+}
+
+@Composable
+fun TaskCard(
+    title: String,
+    time: String,
+    priority: String,
+    priorityColor: ComposeColor,
+    showPostpone: Boolean = false
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(Surface)
+            .border(
+                1.dp,
+                ComposeColor.White.copy(alpha = 0.05f),
+                RoundedCornerShape(22.dp)
+            )
+            .padding(18.dp)
+    ) {
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .border(
+                        1.dp,
+                        TextSecondary,
+                        CircleShape
+                    )
+            )
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Text(
+                        text = title,
+                        color = TextPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(priorityColor.copy(alpha = 0.2f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+
+                        Text(
+                            text = priority,
+                            color = priorityColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = time,
+                    color = TextSecondary,
+                    fontSize = 13.sp
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                tint = TextSecondary
+            )
+        }
+
+        if (showPostpone) {
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+
+                OutlinedButton(
+                    onClick = {},
+                    shape = RoundedCornerShape(30.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        ComposeColor.White.copy(alpha = 0.12f)
+                    )
+                ) {
+
+                    Icon(
+                        imageVector = Icons.Default.Update,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = TextPrimary
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "Postpone",
+                        color = TextPrimary
+                    )
+                }
+            }
+        }
+    }
 }

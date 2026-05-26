@@ -8,6 +8,10 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,11 +20,13 @@ import androidx.navigation.navArgument
 
 import com.example.zzzschedule.home.AddTaskScreen
 import com.example.zzzschedule.home.HomePageNoTaskScreen
+import com.example.zzzschedule.home.Task
 import com.example.zzzschedule.login.LoginPageScreen
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    var tasks by remember { mutableStateOf(listOf<Task>()) }
 
     NavHost(
         navController = navController,
@@ -76,6 +82,7 @@ fun AppNavigation() {
                 age = age,
                 occupation = occupation,
                 sleepHours = sleepHours,
+                tasks = tasks,
                 onAddTaskClick = {
                     navController.navigate("add_task")
                 }
@@ -94,10 +101,13 @@ fun AppNavigation() {
                 slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300))
             }
         ) {
-            // TODO: Handle data saving logic here
             AddTaskScreen(
                 onCancel = { navController.popBackStack() },
-                onSave = { _, _, _, _, _ -> navController.popBackStack() }
+                onSave = { title, start, end, priority, repeat ->
+                    val newTask = Task(title, start, end, priority, repeat)
+                    tasks = tasks + newTask
+                    navController.popBackStack()
+                }
             )
         }
     }
