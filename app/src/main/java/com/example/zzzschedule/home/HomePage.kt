@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,7 +31,8 @@ data class Task(
     val endTime: String,
     val priority: String,
     val repeat: String,
-    val isTomorrow: Boolean = false
+    val isTomorrow: Boolean = false,
+    val isCompleted: Boolean = false,
 )
 
 private val Background = Color(0xFF141317)
@@ -62,13 +62,17 @@ fun HomePageNoTaskScreen(
     onScheduleClick: () -> Unit = {},
     onInsightsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    onAddTaskClick: (isTomorrow: Boolean) -> Unit = {}
+    onAddTaskClick: (isTomorrow: Boolean) -> Unit = {},
+    onToggleTaskCompletion: (Task) -> Unit = {}
 ) {
-    // Removed the isScheduleExpanded state variable
+    var isCompletedExpanded by remember { mutableStateOf(false) }
 
     val currentDayTasks = tasks.filter {
         if (selectedDay == "Today") !it.isTomorrow else it.isTomorrow
     }
+
+    val activeTasks = currentDayTasks.filter { !it.isCompleted }
+    val completedTasks = currentDayTasks.filter { it.isCompleted }
 
     Scaffold(
         containerColor = Background,
@@ -215,7 +219,7 @@ fun HomePageNoTaskScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            if (currentDayTasks.isEmpty()) {
+            if (activeTasks.isEmpty()) {
                 // EMPTY SCHEDULE SECTION
                 Column(
                     modifier = Modifier
@@ -242,7 +246,7 @@ fun HomePageNoTaskScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Your schedule is clear ${selectedDay.lowercase()}",
+                        text = if (selectedDay == "Today") "Lots of free time today!" else "You are free tomorrow!",
                         color = TextPrimary,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium
@@ -279,7 +283,6 @@ fun HomePageNoTaskScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Removed the nested clickable Row wrapper and the collapse/expand chevron arrow icon
                     Text(
                         text = "$selectedDay's Schedule",
                         color = TextPrimary,
@@ -297,25 +300,86 @@ fun HomePageNoTaskScreen(
                     }
                 }
 
-                // Removed the "if (isScheduleExpanded)" restriction block so content is static
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                val sortedTasks = currentDayTasks.sortedBy { it.startTime }
+                val sortedTasks = activeTasks.sortedBy { it.startTime }
 
                 sortedTasks.forEach { task ->
                     TaskCard(
                         title = task.title,
                         time = "${task.startTime} - ${task.endTime}",
                         priority = task.priority.uppercase(),
+                        isCompleted = task.isCompleted,
+                        onCheckedChange = { onToggleTaskCompletion(task) },
                         priorityColor = when (task.priority) {
                             "High" -> ComposeColor.Red
                             "Medium" -> ComposeColor(0xFF7E57C2)
                             else -> ComposeColor.Gray
                         }
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+
+            // COMPLETED SECTION
+            if (selectedDay == "Today") {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isCompletedExpanded = !isCompletedExpanded }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Completed",
+                            color = TextPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Icon(
+                            imageVector = if (isCompletedExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = TextSecondary
+                        )
+                    }
+
+                    if (isCompletedExpanded) {
+                        if (completedTasks.isEmpty()) {
+                            Text(
+                                text = "So empty...",
+                                color = TextSecondary,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            completedTasks.sortedBy { it.startTime }.forEach { task ->
+                                TaskCard(
+                                    title = task.title,
+                                    time = "${task.startTime} - ${task.endTime}",
+                                    priority = task.priority.uppercase(),
+                                    isCompleted = task.isCompleted,
+                                    onCheckedChange = { onToggleTaskCompletion(task) },
+                                    priorityColor = when (task.priority) {
+                                        "High" -> ComposeColor.Red
+                                        "Medium" -> ComposeColor(0xFF7E57C2)
+                                        else -> ComposeColor.Gray
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(60.dp))
         }
     }
 }
@@ -337,6 +401,8 @@ fun TaskCard(
     time: String,
     priority: String,
     priorityColor: ComposeColor,
+    isCompleted: Boolean = false,
+    onCheckedChange: () -> Unit = {},
     showPostpone: Boolean = false
 ) {
     Column(
@@ -359,12 +425,25 @@ fun TaskCard(
             Box(
                 modifier = Modifier
                     .size(24.dp)
+                    .clip(CircleShape)
+                    .background(if (isCompleted) Primary else Color.Transparent)
                     .border(
                         1.dp,
-                        TextSecondary,
+                        if (isCompleted) Primary else TextSecondary,
                         CircleShape
                     )
-            )
+                    .clickable { onCheckedChange() },
+                contentAlignment = Alignment.Center
+            ) {
+                if (isCompleted) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color(0xFF37265E),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.width(14.dp))
 
@@ -378,7 +457,7 @@ fun TaskCard(
 
                     Text(
                         text = title,
-                        color = TextPrimary,
+                        color = if (isCompleted) TextSecondary else TextPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )

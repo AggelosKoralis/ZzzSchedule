@@ -82,10 +82,19 @@ fun AppNavigation() {
                 occupation = occupation,
                 sleepHours = sleepHours,
                 tasks = tasks,
-                selectedDay = selectedDay,          // Pass down current selection state
-                onDayChange = { selectedDay = it }, // Update state when toggled on home screen
+                selectedDay = selectedDay,
+                onDayChange = { selectedDay = it },
                 onAddTaskClick = { isTomorrow ->
                     navController.navigate("add_task/$isTomorrow")
+                },
+                onToggleTaskCompletion = { taskToToggle ->
+                    tasks = tasks.map { task ->
+                        if (task == taskToToggle) {
+                            task.copy(isCompleted = !task.isCompleted)
+                        } else {
+                            task
+                        }
+                    }
                 }
             )
         }
