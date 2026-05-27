@@ -318,7 +318,7 @@ fun HomePageNoTaskScreen(
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
 
@@ -373,7 +373,7 @@ fun HomePageNoTaskScreen(
                                         else -> ComposeColor.Gray
                                     }
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
                             }
                         }
                     }
