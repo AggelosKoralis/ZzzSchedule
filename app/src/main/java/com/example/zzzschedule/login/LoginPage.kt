@@ -2,8 +2,11 @@ package com.example.zzzschedule.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable // Added for clickability
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable // Added for dialog options
+import androidx.compose.foundation.selection.selectableGroup // Added for dialog options
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -17,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role // Added for accessibility role mapping
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,7 +47,7 @@ fun LoginPageScreen(
     var username by remember { mutableStateOf("") }
     var age by remember { mutableStateOf("") }
     var occupation by remember { mutableStateOf("Select") }
-    var expanded by remember { mutableStateOf(false) }
+    var showOccupationDialog by remember { mutableStateOf(false) } // Renamed from expanded
     var sleepHours by remember { mutableFloatStateOf(7f) }
     var loading by remember { mutableStateOf(false) }
 
@@ -59,7 +63,7 @@ fun LoginPageScreen(
         "Select"
     )
 
-// Validation Rules
+    // Validation Rules
     val isUsernameValid = username.isNotBlank()
     val isAgeValid = age.toIntOrNull()?.let { it in 13..99 } ?: false // Strictly 13 to 99
     val isOccupationValid = occupation != "Select" && occupation.isNotBlank()
@@ -89,7 +93,7 @@ fun LoginPageScreen(
                 lineHeight = 36.sp
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(6.6.dp))
 
             Text(
                 text = "Your daily cycle is unique. Tell us a bit about yourself.",
@@ -164,7 +168,6 @@ fun LoginPageScreen(
                 OutlinedTextField(
                     value = age,
                     onValueChange = { input ->
-                        // Limit text length to 2 digits max to prevent typing numbers like 1000
                         if (input.all { it.isDigit() } && input.length <= 2) {
                             age = input
                         }
@@ -204,10 +207,8 @@ fun LoginPageScreen(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
+                // Replaced ExposedDropdownMenuBox with a transparent overlay setup
+                Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = if (occupation == "Select") "" else occupation,
                         onValueChange = {},
@@ -216,9 +217,7 @@ fun LoginPageScreen(
                         trailingIcon = {
                             Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
                         },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         isError = showErrors && !isOccupationValid,
                         supportingText = {
@@ -237,21 +236,13 @@ fun LoginPageScreen(
                         )
                     )
 
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        containerColor = SurfaceHigh
-                    ) {
-                        occupations.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(item, color = TextPrimary) },
-                                onClick = {
-                                    occupation = item
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
+                    // Transparent click interceptor layer over the form field
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { showOccupationDialog = true }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -345,4 +336,76 @@ fun LoginPageScreen(
             }
         }
     }
+
+    // Dynamic rendering of the reused Selection Dialog component
+    if (showOccupationDialog) {
+        SelectionDialog(
+            title = "Select Occupation",
+            options = occupations,
+            selected = occupation,
+            onDismiss = { showOccupationDialog = false },
+            onSelected = {
+                occupation = it
+                showOccupationDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun SelectionDialog(
+    title: String,
+    options: List<String>,
+    selected: String,
+    onDismiss: () -> Unit,
+    onSelected: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceHigh,
+        title = {
+            Text(
+                text = title,
+                color = TextPrimary
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.selectableGroup()
+            ) {
+                options.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = (option == selected),
+                                onClick = {
+                                    onSelected(option)
+                                },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = (option == selected),
+                            onClick = null,
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Primary,
+                                unselectedColor = TextSecondary
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Text(
+                            text = option,
+                            color = TextPrimary
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {}
+    )
 }

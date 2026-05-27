@@ -28,6 +28,9 @@ fun AppNavigation() {
     val navController = rememberNavController()
     var tasks by remember { mutableStateOf(listOf<Task>()) }
 
+    // Hoisted state to track selected day across screen switches
+    var selectedDay by remember { mutableStateOf("Today") }
+
     NavHost(
         navController = navController,
         startDestination = "login"
@@ -36,8 +39,6 @@ fun AppNavigation() {
         // 1. LOGIN ROUTE
         composable(
             route = "login",
-            // When leaving Login to go to Home, slide out to the left
-            // TODO: Save this user's profile data
             exitTransition = {
                 slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(300)) + fadeOut(animationSpec = tween(150))
             }
@@ -58,16 +59,14 @@ fun AppNavigation() {
                 navArgument("username") { defaultValue = "" },
                 navArgument("age") { defaultValue = "" },
                 navArgument("occupation") { defaultValue = "" },
-                navArgument("sleepHours") { 
+                navArgument("sleepHours") {
                     type = NavType.IntType
-                    defaultValue = 8 
+                    defaultValue = 8
                 }
             ),
-            // Horizontal slide-in from the right
             enterTransition = {
                 slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) + fadeIn(animationSpec = tween(150))
             },
-            // Push back when returning from Add Task
             popEnterTransition = {
                 slideInVertically(initialOffsetY = { it }, animationSpec = tween(0))
             }
@@ -83,28 +82,33 @@ fun AppNavigation() {
                 occupation = occupation,
                 sleepHours = sleepHours,
                 tasks = tasks,
-                onAddTaskClick = {
-                    navController.navigate("add_task")
+                selectedDay = selectedDay,          // Pass down current selection state
+                onDayChange = { selectedDay = it }, // Update state when toggled on home screen
+                onAddTaskClick = { isTomorrow ->
+                    navController.navigate("add_task/$isTomorrow")
                 }
             )
         }
 
         // 3. ADD TASK ROUTE
         composable(
-            route = "add_task",
-            // Bottom Sheet/Full Screen slide up from the bottom
+            route = "add_task/{isTomorrow}",
+            arguments = listOf(
+                navArgument("isTomorrow") { type = NavType.BoolType }
+            ),
             enterTransition = {
                 slideInVertically(initialOffsetY = { it }, animationSpec = tween(300))
             },
-            // Slide back down
             popExitTransition = {
                 slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300))
             }
-        ) {
+        ) { backStackEntry ->
+            val isTomorrow = backStackEntry.arguments?.getBoolean("isTomorrow") ?: false
+
             AddTaskScreen(
                 onCancel = { navController.popBackStack() },
                 onSave = { title, start, end, priority, repeat ->
-                    val newTask = Task(title, start, end, priority, repeat)
+                    val newTask = Task(title, start, end, priority, repeat, isTomorrow)
                     tasks = tasks + newTask
                     navController.popBackStack()
                 }

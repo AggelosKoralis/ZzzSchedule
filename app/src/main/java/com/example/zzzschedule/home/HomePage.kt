@@ -3,6 +3,7 @@ package com.example.zzzschedule.home
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -13,7 +14,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,8 +32,8 @@ data class Task(
     val endTime: String,
     val priority: String,
     val repeat: String,
+    val isTomorrow: Boolean = false
 )
-
 
 private val Background = Color(0xFF141317)
 private val Surface = Color(0xFF201F23)
@@ -55,124 +56,37 @@ fun HomePageNoTaskScreen(
     occupation: String = "",
     sleepHours: Int = 8,
     tasks: List<Task> = emptyList(),
+    selectedDay: String = "Today",
+    onDayChange: (String) -> Unit = {},
     onHomeClick: () -> Unit = {},
     onScheduleClick: () -> Unit = {},
     onInsightsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    onAddTaskClick: () -> Unit = {}
+    onAddTaskClick: (isTomorrow: Boolean) -> Unit = {}
 ) {
+    // Removed the isScheduleExpanded state variable
+
+    val currentDayTasks = tasks.filter {
+        if (selectedDay == "Today") !it.isTomorrow else it.isTomorrow
+    }
 
     Scaffold(
-
         containerColor = Background,
-
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = if (username.isNotEmpty()) "Hi, $username!" else "Daily Overview",
+                        text = if (username.isNotEmpty()) "Hello, $username!" else "Daily Overview",
                         color = Primary,
                         fontSize = 34.sp,
                         fontWeight = FontWeight.Bold
                     )
                 },
-
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(
-                            imageVector = Icons.Outlined.NotificationsNone,
-                            contentDescription = null,
-                            tint = Primary
-                        )
-                    }
-                },
-
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Background
                 )
             )
         },
-
-        bottomBar = {
-
-            NavigationBar(
-                containerColor = Surface
-            ) {
-
-                NavigationBarItem(
-                    selected = true,
-                    onClick = onHomeClick,
-
-                    icon = {
-                        Icon(
-                            Icons.Default.Home,
-                            contentDescription = null
-                        )
-                    },
-
-                    label = {
-                        Text("Home")
-                    },
-
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF22005C),
-                        selectedTextColor = Secondary,
-                        indicatorColor = Secondary,
-                        unselectedIconColor = TextSecondary,
-                        unselectedTextColor = TextSecondary
-                    )
-                )
-
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onScheduleClick,
-
-                    icon = {
-                        Icon(
-                            Icons.Default.DateRange,
-                            contentDescription = null
-                        )
-                    },
-
-                    label = {
-                        Text("Schedule")
-                    }
-                )
-
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onInsightsClick,
-
-                    icon = {
-                        Icon(
-                            Icons.Default.Insights,
-                            contentDescription = null
-                        )
-                    },
-
-                    label = {
-                        Text("Insights")
-                    }
-                )
-
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onSettingsClick,
-
-                    icon = {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = null
-                        )
-                    },
-
-                    label = {
-                        Text("Settings")
-                    }
-                )
-            }
-        }
-
     ) { padding ->
 
         Column(
@@ -187,7 +101,6 @@ fun HomePageNoTaskScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // ENERGY CARD
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -209,14 +122,11 @@ fun HomePageNoTaskScreen(
             ) {
 
                 Column {
-
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-
                         Column {
-
                             Text(
                                 text = "Estimated energy",
                                 color = TextPrimary,
@@ -227,9 +137,9 @@ fun HomePageNoTaskScreen(
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
-                                text = if (occupation.isNotEmpty() && occupation != "Select") 
+                                text = if (occupation.isNotEmpty() && occupation != "Select")
                                     "Based on your lifestyle"
-                                    else "Based on last night's rest",
+                                else "Based on last night's rest",
                                 color = TextSecondary
                             )
                         }
@@ -248,11 +158,9 @@ fun HomePageNoTaskScreen(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-
                         Box(
                             contentAlignment = Alignment.Center
                         ) {
-
                             val energyProgress = calculateEnergy(sleepHours.toFloat())
 
                             CircularProgressIndicator(
@@ -274,16 +182,45 @@ fun HomePageNoTaskScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // DAY SELECTOR
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Surface)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                listOf("Today", "Tomorrow").forEach { day ->
+                    val isSelected = selectedDay == day
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isSelected) Primary else Color.Transparent)
+                            .clickable { onDayChange(day) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = day,
+                            color = if (isSelected) Color(0xFF37265E) else TextSecondary,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
 
-            if (tasks.isEmpty()) {
+            if (currentDayTasks.isEmpty()) {
                 // EMPTY SCHEDULE SECTION
-
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 30.dp),
-
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
@@ -292,10 +229,8 @@ fun HomePageNoTaskScreen(
                             .size(90.dp)
                             .clip(CircleShape)
                             .background(SurfaceHigh),
-
                         contentAlignment = Alignment.Center
                     ) {
-
                         Icon(
                             imageVector = Icons.Default.EventAvailable,
                             contentDescription = null,
@@ -307,28 +242,23 @@ fun HomePageNoTaskScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Your schedule is clear today",
+                        text = "Your schedule is clear ${selectedDay.lowercase()}",
                         color = TextPrimary,
-                        fontSize = 22.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Medium
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
-
-                        onClick = onAddTaskClick,
-
+                        onClick = { onAddTaskClick(selectedDay == "Tomorrow") },
                         shape = RoundedCornerShape(100.dp),
-
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Primary,
                             contentColor = Color(0xFF37265E)
                         ),
-
                         modifier = Modifier.height(56.dp)
                     ) {
-
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = null
@@ -344,32 +274,33 @@ fun HomePageNoTaskScreen(
                 }
             } else {
                 // TASKS LIST
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Removed the nested clickable Row wrapper and the collapse/expand chevron arrow icon
                     Text(
-                        text = "Today's Schedule",
+                        text = "$selectedDay's Schedule",
                         color = TextPrimary,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.SemiBold
                     )
 
-                    IconButton(onClick = onAddTaskClick) {
+                    IconButton(onClick = { onAddTaskClick(selectedDay == "Tomorrow") }) {
                         Icon(
                             imageVector = Icons.Default.AddCircle,
                             contentDescription = "Add Task",
                             tint = Primary,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(36.dp)
                         )
                     }
                 }
 
+                // Removed the "if (isScheduleExpanded)" restriction block so content is static
                 Spacer(modifier = Modifier.height(16.dp))
 
-                val sortedTasks = tasks.sortedBy { it.startTime }
+                val sortedTasks = currentDayTasks.sortedBy { it.startTime }
 
                 sortedTasks.forEach { task ->
                     TaskCard(
@@ -385,25 +316,18 @@ fun HomePageNoTaskScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
-
-//            Spacer(modifier = Modifier.height(120.dp))
         }
     }
 }
 
 fun calculateEnergy(sleepHours: Float): Float {
-    // We clip the input between 0 and 12 hours just to keep bounds safe
     val hours = sleepHours.coerceIn(0f, 12f)
-
-    // Centers the curve around 6.5 hours and controls the steepness
     val midpoint = 6.5f
     val steepness = 1.2f
 
     val k = (hours - midpoint) * steepness
-    val sigmoid = (k / (1f + kotlin.math.abs(k))) // Fast sigmoid approximation
+    val sigmoid = (k / (1f + kotlin.math.abs(k)))
 
-    // Normalize the result so that 4h feels low (~15%) and 8h feels great (~90%)
-    // Then coerce to make sure it's strictly between 0.0 and 1.0
     return ((sigmoid + 1f) / 2f).coerceIn(0f, 1f)
 }
 
@@ -415,7 +339,6 @@ fun TaskCard(
     priorityColor: ComposeColor,
     showPostpone: Boolean = false
 ) {
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -495,14 +418,12 @@ fun TaskCard(
         }
 
         if (showPostpone) {
-
             Spacer(modifier = Modifier.height(18.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-
                 OutlinedButton(
                     onClick = {},
                     shape = RoundedCornerShape(30.dp),
@@ -511,7 +432,6 @@ fun TaskCard(
                         ComposeColor.White.copy(alpha = 0.12f)
                     )
                 ) {
-
                     Icon(
                         imageVector = Icons.Default.Update,
                         contentDescription = null,
