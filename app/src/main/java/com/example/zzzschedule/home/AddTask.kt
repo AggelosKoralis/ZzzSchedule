@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.window.DialogProperties
 
 
 private val Background = Color(0xFF141317)
@@ -51,281 +52,109 @@ private val Outline = Color(0xFF49454F)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskScreen(
-
     onCancel: () -> Unit = {},
-    onSave: (
-        title: String,
-        startTime: String,
-        endTime: String,
-        priority: String,
-        repeat: String
-    ) -> Unit = { _, _, _, _, _ -> }
-
+    onSave: (title: String, startTime: String, endTime: String, priority: String, repeat: String) -> Unit = { _, _, _, _, _ -> }
 ) {
-
     var title by remember { mutableStateOf("") }
-
     var startTime by remember { mutableStateOf("09:00") }
     var endTime by remember { mutableStateOf("10:30") }
-
     var priority by remember { mutableStateOf("Low") }
     var repeat by remember { mutableStateOf("None") }
 
     var showPriorityDialog by remember { mutableStateOf(false) }
     var showRepeatDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-
-        containerColor = Background,
-
-        topBar = {
-            CenterAlignedTopAppBar(
-                modifier = Modifier.padding(horizontal = 12.dp),
-                title = {
-                    Text(
-                        text = "Add Task",
-                        color = TextPrimary,
-                        fontWeight = FontWeight.Medium
-                    )
-                },
-                navigationIcon = {
-                    Button(
-                        onClick = onCancel,
-                        modifier = Modifier.height(40.dp),
-                        shape = RoundedCornerShape(100.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Secondary,
-                            contentColor = Color(0xFF22005C)
-                        )
-                    ) {
-                        Text(
-                            text = "Cancel",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                },
-                actions = {
-                    Button(
-                        onClick = {
-                            onSave(
-                                title,
-                                startTime,
-                                endTime,
-                                priority,
-                                repeat
-                            )
-                        },
-                        modifier = Modifier.height(40.dp),
-                        shape = RoundedCornerShape(100.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Secondary,
-                            contentColor = Color(0xFF22005C)
-                        )
-                    ) {
-                        Text(
-                            text = "Save",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors( // Updated color builder
-                    containerColor = SurfaceLow
-                )
-            )
-        }
-
-    ) { padding ->
-
-        Column(
-
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SurfaceLow)
-                .verticalScroll(rememberScrollState())
-                .padding(padding)
-                .padding(horizontal = 24.dp)
-
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SurfaceLow)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp)
+    ) {
+        // Dynamic Bottom Sheet Headers replacing TopAppBar
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // TASK TITLE
-
-            Text(
-                text = "Task Title",
-                color = Primary,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-
-                value = title,
-                onValueChange = { title = it },
-
-                modifier = Modifier.fillMaxWidth(),
-
-                placeholder = {
-                    Text("Enter task title")
-                },
-
-
-                shape = RoundedCornerShape(14.dp),
-
-                singleLine = true,
-
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Outline,
-                    focusedContainerColor = SurfaceLow,
-                    unfocusedContainerColor = SurfaceLow,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                )
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-
-                TimeCard(
-                    label = "Start",
-                    value = startTime,
-                    onValueChange = { startTime = it },
-                    modifier = Modifier.weight(1f)
-                )
-
-                TimeCard(
-                    label = "End",
-                    value = endTime,
-                    onValueChange = { endTime = it },
-                    modifier = Modifier.weight(1f)
-                )
+            TextButton(onClick = onCancel, colors = ButtonDefaults.textButtonColors(contentColor = Secondary)) {
+                Text(text = "Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // PRIORITY
-
-            SelectionRow(
-
-                title = "Priority",
-                value = priority,
-                icon = Icons.Default.PriorityHigh,
-                iconColor = Color(0xFFFFB4AB),
-
-                onSelect = {
-                    showPriorityDialog = true
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // REPEAT
-
-            SelectionRow(
-
-                title = "Repeat",
-                value = repeat,
-                icon = Icons.Default.EventRepeat,
-                iconColor = Secondary,
-
-                onSelect = {
-                    showRepeatDialog = true
-                }
-            )
+            Text(text = "Add Task", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Button(
+                onClick = { onSave(title, startTime, endTime, priority, repeat) },
+                shape = RoundedCornerShape(100.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Secondary, contentColor = Color(0xFF22005C))
+            ) {
+                Text(text = "Save", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(text = "Task Title", color = Primary, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Enter task title") },
+            shape = RoundedCornerShape(14.dp),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Primary, unfocusedBorderColor = Outline,
+                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+            )
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TimeCard(label = "Start", value = startTime, onValueChange = { startTime = it }, modifier = Modifier.weight(1f))
+            TimeCard(label = "End", value = endTime, onValueChange = { endTime = it }, modifier = Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        SelectionRow(title = "Priority", value = priority, icon = Icons.Default.PriorityHigh, iconColor = Color(0xFFFFB4AB), onSelect = { showPriorityDialog = true })
+        Spacer(modifier = Modifier.height(16.dp))
+        SelectionRow(title = "Repeat", value = repeat, icon = Icons.Default.EventRepeat, iconColor = Secondary, onSelect = { showRepeatDialog = true })
+
+        Spacer(modifier = Modifier.height(40.dp))
     }
 
-    // PRIORITY DIALOG
-
     if (showPriorityDialog) {
-
         SelectionDialog(
-
             title = "Select Priority",
-
-            options = listOf(
-                "Low",
-                "Medium",
-                "High"
-            ),
-
+            options = listOf("Low", "Medium", "High"),
             selected = priority,
-
-            onDismiss = {
-                showPriorityDialog = false
-            },
-
+            onDismiss = { showPriorityDialog = false },
             onSelected = {
-
                 priority = it
-                showPriorityDialog = false
+                showPriorityDialog = false // <-- Added this
             }
         )
     }
-
-    // REPEAT DIALOG
-
     if (showRepeatDialog) {
-
         SelectionDialog(
-
             title = "Repeat Cycle",
-
-            options = listOf(
-                "Daily",
-                "Weekly",
-                "Monthly",
-                "None"
-            ),
-
+            options = listOf("Daily", "Weekly", "Monthly", "None"),
             selected = repeat,
-
-            onDismiss = {
-                showRepeatDialog = false
-            },
-
+            onDismiss = { showRepeatDialog = false },
             onSelected = {
-
                 repeat = it
-                showRepeatDialog = false
+                showRepeatDialog = false // <-- Added this
             }
         )
     }
 }
 
 @Composable
-private fun TimeCard(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun TimeCard(label: String, value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
     val focusManager = LocalFocusManager.current
+    LaunchedEffect(Unit) { if (value.isEmpty()) onValueChange("09:00") }
 
-    // Set the initial default value to "09:00" if the parent passes an empty string
-    LaunchedEffect(Unit) {
-        if (value.isEmpty()) {
-            onValueChange("09:00")
-        }
-    }
-
-    // Use TextFieldValue to manage both the text and the cursor position
-    var textFieldValue by remember {
-        mutableStateOf(
-            TextFieldValue(
-                text = value.ifEmpty { "09:00" }
-            )
-        )
-    }
-
-    // Sync state if parent explicitly changes the value (e.g., clearing the form)
+    var textFieldValue by remember { mutableStateOf(TextFieldValue(text = value.ifEmpty { "09:00" })) }
     LaunchedEffect(value) {
         if (value.isNotEmpty() && value != textFieldValue.text) {
             textFieldValue = textFieldValue.copy(text = value)
@@ -338,271 +167,138 @@ private fun TimeCard(
             .border(1.dp, Outline.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
             .padding(14.dp)
     ) {
-
-        Text(
-            text = label,
-            color = TextPrimary,
-            fontWeight = FontWeight.Medium
-        )
-
+        Text(text = label, color = TextPrimary, fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.height(6.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextField(
-                value = textFieldValue, // Using TextFieldValue instead of String
-                onValueChange = { newValue ->
-                    // Process the input through our overwrite logic
-                    val processedValue = handleTimeInput(textFieldValue, newValue)
-
-                    // Update local cursor/text state
-                    textFieldValue = processedValue
-
-                    // Send just the string back to the parent
-                    onValueChange(processedValue.text)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done
-                )
-            )
-        }
+        TextField(
+            value = textFieldValue,
+            onValueChange = { newValue ->
+                val processedValue = handleTimeInput(textFieldValue, newValue)
+                textFieldValue = processedValue
+                onValueChange(processedValue.text)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
+                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
+        )
     }
 }
 
-/**
- * Handles the logic for overwriting characters, jumping the colon, and zeroing out on backspace.
- */
 private fun handleTimeInput(old: TextFieldValue, new: TextFieldValue): TextFieldValue {
-    // 1. If user highlights all and deletes, reset to default
-    if (new.text.isEmpty()) {
-        return TextFieldValue("00:00", TextRange(0))
-    }
-
-    // Prevent multi-character operations (like pasting a whole sentence) to keep the mask stable
+    if (new.text.isEmpty()) return TextFieldValue("00:00", TextRange(0))
     val lengthDiff = new.text.length - old.text.length
     if (Math.abs(lengthDiff) > 1) return old
 
-    // 2. Handle Typing (Insertion)
     if (lengthDiff == 1) {
         val cursorPosition = old.selection.start
-        if (cursorPosition >= 5) return old // Block typing past the 5th character (e.g., 09:00)
-
+        if (cursorPosition >= 5) return old
         val insertedChar = new.text[cursorPosition]
-        if (!insertedChar.isDigit()) return old // Only allow numbers
+        if (!insertedChar.isDigit()) return old
 
         val chars = old.text.toCharArray()
         var nextCursor = cursorPosition + 1
-
         if (cursorPosition == 2) {
-            // User typed exactly at the colon. Apply the digit to the minutes instead.
             chars[3] = insertedChar
             nextCursor = 4
         } else {
-            // Overwrite the existing digit
             chars[cursorPosition] = insertedChar
-            // Skip the cursor over the colon
             if (nextCursor == 2) nextCursor = 3
         }
-
         return TextFieldValue(String(chars), TextRange(nextCursor))
     }
 
-    // 3. Handle Backspace (Deletion)
     if (lengthDiff == -1) {
         val deletedPosition = old.selection.start - 1
         if (deletedPosition < 0) return old
-
         val chars = old.text.toCharArray()
         var nextCursor = deletedPosition
-
         if (deletedPosition == 2) {
-            // User backspaced the colon. We delete the hour digit before the colon instead.
             chars[1] = '0'
             nextCursor = 1
         } else {
-            // Replace deleted digit with a '0'
             chars[deletedPosition] = '0'
         }
-
         return TextFieldValue(String(chars), TextRange(nextCursor))
     }
-
-    // 4. Handle simple cursor movement (clicking around)
     return new
 }
 
 @Composable
-private fun SelectionRow(
-
-    title: String,
-    value: String,
-
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconColor: Color,
-
-    onSelect: () -> Unit
-
-) {
-
+private fun SelectionRow(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, iconColor: Color, onSelect: () -> Unit) {
     Row(
-
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                Surface,
-                RoundedCornerShape(22.dp)
-            )
-            .border(
-                1.dp,
-                Outline.copy(alpha = 0.1f),
-                RoundedCornerShape(22.dp)
-            )
-            .clip(RoundedCornerShape(22.dp)) // Ensures ripple effect matches the card boundary
-            .clickable(onClick = onSelect) // Entire card is now clickable
+            .background(Surface, RoundedCornerShape(22.dp))
+            .border(1.dp, Outline.copy(alpha = 0.1f), RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .clickable(onClick = onSelect)
             .padding(16.dp),
-
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
-
     ) {
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Box(
-
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        iconColor.copy(alpha = 0.15f),
-                        CircleShape
-                    ),
-
-                contentAlignment = Alignment.Center
-
-            ) {
-
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconColor
-                )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(40.dp).background(iconColor.copy(alpha = 0.15f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(imageVector = icon, contentDescription = null, tint = iconColor)
             }
-
             Spacer(modifier = Modifier.width(14.dp))
-
             Column {
-
-                Text(
-                    text = title,
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Text(
-                    text = value,
-                    color = TextSecondary
-                )
+                Text(text = title, color = TextPrimary, fontWeight = FontWeight.Medium)
+                Text(text = value, color = TextSecondary)
             }
         }
-
-        // Replaced TextButton with simple Text so it doesn't fight the parent row for clicks
-        Text(
-            text = "Select",
-            color = Primary,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(end = 8.dp)
-        )
+        Text(text = "Select", color = Primary, fontWeight = FontWeight.Medium, modifier = Modifier.padding(end = 8.dp))
     }
 }
 
 @Composable
 private fun SelectionDialog(
-
     title: String,
-
     options: List<String>,
     selected: String,
-
     onDismiss: () -> Unit,
     onSelected: (String) -> Unit
-
 ) {
-
     AlertDialog(
-
         onDismissRequest = onDismiss,
-
         containerColor = SurfaceHigh,
-
-        title = {
-
-            Text(
-                text = title,
-                color = TextPrimary
-            )
-        },
-
+        // 1. Turn off default platform stretching behavior
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        // 2. Set a custom width (e.g., 85% of screen width or fixed dp like 300.dp)
+        modifier = Modifier
+            .fillMaxWidth(0.85f)
+            .wrapContentHeight(),
+        title = { Text(text = title, color = TextPrimary) },
         text = {
-
-            Column(
-                modifier = Modifier.selectableGroup()
-            ) {
-
+            Column(modifier = Modifier.selectableGroup()) {
                 options.forEach { option ->
-
                     Row(
-
                         modifier = Modifier
                             .fillMaxWidth()
                             .selectable(
                                 selected = (option == selected),
-                                onClick = {
-                                    onSelected(option)
-                                },
+                                onClick = { onSelected(option) },
                                 role = Role.RadioButton
                             )
                             .padding(vertical = 12.dp),
-
                         verticalAlignment = Alignment.CenterVertically
-
                     ) {
-
                         RadioButton(
-
                             selected = (option == selected),
-
                             onClick = null,
-
                             colors = RadioButtonDefaults.colors(
                                 selectedColor = Primary,
                                 unselectedColor = TextSecondary
                             )
                         )
-
                         Spacer(modifier = Modifier.width(12.dp))
-
-                        Text(
-                            text = option,
-                            color = TextPrimary
-                        )
+                        Text(text = option, color = TextPrimary)
                     }
                 }
             }
         },
-
         confirmButton = {}
     )
 }

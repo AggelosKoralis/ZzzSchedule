@@ -4,9 +4,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,8 +15,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-
-import com.example.zzzschedule.home.AddTaskScreen
 import com.example.zzzschedule.home.HomePageNoTaskScreen
 import com.example.zzzschedule.home.Task
 import com.example.zzzschedule.login.LoginPageScreen
@@ -52,7 +48,7 @@ fun AppNavigation() {
             )
         }
 
-        // 2. HOME ROUTE
+        // 2. HOME ROUTE (Now self-contained with its creation sheet)
         composable(
             route = "home?username={username}&age={age}&occupation={occupation}&sleepHours={sleepHours}",
             arguments = listOf(
@@ -66,9 +62,6 @@ fun AppNavigation() {
             ),
             enterTransition = {
                 slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) + fadeIn(animationSpec = tween(150))
-            },
-            popEnterTransition = {
-                slideInVertically(initialOffsetY = { it }, animationSpec = tween(0))
             }
         ) { backStackEntry ->
             val username = backStackEntry.arguments?.getString("username") ?: ""
@@ -84,8 +77,16 @@ fun AppNavigation() {
                 tasks = tasks,
                 selectedDay = selectedDay,
                 onDayChange = { selectedDay = it },
-                onAddTaskClick = { isTomorrow ->
-                    navController.navigate("add_task/$isTomorrow")
+                onSaveNewTask = { title, start, end, priority, repeat, isTomorrow ->
+                    val newTask = Task(
+                        title = title,
+                        startTime = start,
+                        endTime = end,
+                        priority = priority,
+                        repeat = repeat,
+                        isTomorrow = isTomorrow
+                    )
+                    tasks = tasks + newTask
                 },
                 onToggleTaskCompletion = { taskToToggle ->
                     tasks = tasks.map { task ->
@@ -95,31 +96,6 @@ fun AppNavigation() {
                             task
                         }
                     }
-                }
-            )
-        }
-
-        // 3. ADD TASK ROUTE
-        composable(
-            route = "add_task/{isTomorrow}",
-            arguments = listOf(
-                navArgument("isTomorrow") { type = NavType.BoolType }
-            ),
-            enterTransition = {
-                slideInVertically(initialOffsetY = { it }, animationSpec = tween(300))
-            },
-            popExitTransition = {
-                slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300))
-            }
-        ) { backStackEntry ->
-            val isTomorrow = backStackEntry.arguments?.getBoolean("isTomorrow") ?: false
-
-            AddTaskScreen(
-                onCancel = { navController.popBackStack() },
-                onSave = { title, start, end, priority, repeat ->
-                    val newTask = Task(title, start, end, priority, repeat, isTomorrow)
-                    tasks = tasks + newTask
-                    navController.popBackStack()
                 }
             )
         }
