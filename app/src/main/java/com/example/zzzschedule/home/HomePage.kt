@@ -55,6 +55,8 @@ data class Task(
     val repeat: String,
     val isTomorrow: Boolean = false,
     val isCompleted: Boolean = false,
+    val isPostponed: Boolean = false,
+    val postponedToDate: String? = null,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,14 +74,20 @@ fun HomePageNoTaskScreen(
     onInsightsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onSaveNewTask: (title: String, start: String, end: String, priority: String, repeat: String, isTomorrow: Boolean) -> Unit = { _, _, _, _, _, _ -> },
-    onToggleTaskCompletion: (Task) -> Unit = {}
+    onToggleTaskCompletion: (Task) -> Unit = {},
+    // NEW CALLBACK: To handle postponing
+    onPostponeTask: (oldTask: Task, newTitle: String, newStart: String, newEnd: String, newPriority: String, newRepeat: String, postponeDate: String) -> Unit = { _, _, _, _, _, _, _ -> }
 ) {
     var isCompletedExpanded by remember { mutableStateOf(false) }
+    var isPostponedExpanded by remember { mutableStateOf(false) }
 
     // --- BOTTOM SHEET STATE MANAGEMENT ---
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     var targetTaskDayIsTomorrow by remember { mutableStateOf(false) }
+
+    // NEW STATE: Track if we are editing/postponing a specific task
+    var taskToPostpone by remember { mutableStateOf<Task?>(null) }
 
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = false
@@ -100,8 +108,13 @@ fun HomePageNoTaskScreen(
         }
     }
 
-    val activeTasks = currentDayTasks.filter { !it.isCompleted }
-    val completedTasks = currentDayTasks.filter { it.isCompleted }
+    val activeTasks = currentDayTasks.filter { !it.isCompleted && !it.isPostponed }
+    val completedTasks = currentDayTasks.filter { it.isCompleted && !it.isPostponed }
+    val postponedTasks = currentDayTasks.filter { it.isPostponed }
+
+    // Calculate energy once to use across the UI
+    val energyProgress = calculateEnergy(sleepHours.toFloat())
+    val suggestPostpone = energyProgress < 0.60f && selectedDay == "Today"
 
     Scaffold(
         containerColor = Background,
@@ -164,7 +177,6 @@ fun HomePageNoTaskScreen(
                     Spacer(modifier = Modifier.height(26.dp))
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Box(contentAlignment = Alignment.Center) {
-                            val energyProgress = calculateEnergy(sleepHours.toFloat())
                             CircularProgressIndicator(
                                 progress = { energyProgress },
                                 modifier = Modifier.size(140.dp),
@@ -178,9 +190,9 @@ fun HomePageNoTaskScreen(
                 }
             }
 
+            // ... (DAY SELECTOR AND EMPTY STATE REMAIN UNCHANGED) ...
             Spacer(modifier = Modifier.height(24.dp))
 
-            // DAY SELECTOR
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -212,36 +224,26 @@ fun HomePageNoTaskScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             if (activeTasks.isEmpty()) {
-                // EMPTY SCHEDULE SECTION
+                // ... (EMPTY STATE REMAINS THE SAME) ...
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 30.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 30.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
-                        modifier = Modifier
-                            .size(90.dp)
-                            .clip(CircleShape)
-                            .background(SurfaceHigh),
+                        modifier = Modifier.size(90.dp).clip(CircleShape).background(SurfaceHigh),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(imageVector = Icons.Default.EventAvailable, contentDescription = null, tint = Primary, modifier = Modifier.size(36.dp))
                     }
-
                     Spacer(modifier = Modifier.height(20.dp))
-
                     Text(
                         text = if (selectedDay == "Today") "Lots of free time today!" else "You are free tomorrow!",
-                        color = TextPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Medium
+                        color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Medium
                     )
-
                     Spacer(modifier = Modifier.height(24.dp))
-
                     Button(
                         onClick = {
+                            taskToPostpone = null // Ensure it's a new task
                             targetTaskDayIsTomorrow = selectedDay == "Tomorrow"
                             showBottomSheet = true
                         },
@@ -263,6 +265,7 @@ fun HomePageNoTaskScreen(
                 ) {
                     Text(text = "$selectedDay's Schedule", color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
                     IconButton(onClick = {
+                        taskToPostpone = null // Ensure it's a new task
                         targetTaskDayIsTomorrow = selectedDay == "Tomorrow"
                         showBottomSheet = true
                     }) {
@@ -274,63 +277,110 @@ fun HomePageNoTaskScreen(
 
                 val sortedTasks = activeTasks.sortedBy { it.startTime }
                 sortedTasks.forEach { task ->
+                    val isLowPriority = task.priority.equals("Low", ignoreCase = true)
+
                     TaskCard(
                         title = task.title,
                         time = "${task.startTime} - ${task.endTime}",
                         priority = task.priority.uppercase(),
                         isCompleted = task.isCompleted,
                         showCheckbox = selectedDay == "Today",
-                        onCheckedChange = { onToggleTaskCompletion(task) }, // Added callback here
+                        onCheckedChange = { onToggleTaskCompletion(task) },
                         priorityColor = when (task.priority) {
                             "High" -> ComposeColor.Red
                             "Medium" -> ComposeColor(0xFF7E57C2)
                             else -> ComposeColor.Gray
+                        },
+                        showPostpone = suggestPostpone && isLowPriority,
+                        onPostponeClick = {
+                            taskToPostpone = task
+                            showBottomSheet = true
                         }
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                 }
             }
 
-            // COMPLETED SECTION
-            if (selectedDay == "Today") {
-                Spacer(modifier = Modifier.height(8.dp))
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { isCompletedExpanded = !isCompletedExpanded }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "Completed", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = if (isCompletedExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = null, tint = TextSecondary
-                        )
-                    }
+            // POSTPONED SECTION
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isPostponedExpanded = !isPostponedExpanded }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Postponed", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = if (isPostponedExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null, tint = TextSecondary
+                    )
+                }
 
-                    if (isCompletedExpanded) {
-                        if (completedTasks.isEmpty()) {
-                            Text(text = "So empty...", color = TextSecondary, modifier = Modifier.padding(vertical = 12.dp))
-                        } else {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            completedTasks.sortedBy { it.startTime }.forEach { task ->
-                                TaskCard(
-                                    title = task.title,
-                                    time = "${task.startTime} - ${task.endTime}",
-                                    priority = task.priority.uppercase(),
-                                    isCompleted = task.isCompleted,
-                                    showCheckbox = true,
-                                    onCheckedChange = { onToggleTaskCompletion(task) }, // Added callback here
-                                    priorityColor = when (task.priority) {
-                                        "High" -> ComposeColor.Red
-                                        "Medium" -> ComposeColor(0xFF7E57C2)
-                                        else -> ComposeColor.Gray
-                                    }
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                            }
+                if (isPostponedExpanded) {
+                    if (postponedTasks.isEmpty()) {
+                        Text(text = "Nothing postponed yet", color = TextSecondary, modifier = Modifier.padding(vertical = 12.dp))
+                    } else {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        postponedTasks.sortedBy { it.startTime }.forEach { task ->
+                            TaskCard(
+                                title = task.title,
+                                time = "Postponed to: ${task.postponedToDate ?: "Another day"}",
+                                priority = task.priority.uppercase(),
+                                isCompleted = false,
+                                showCheckbox = false,
+                                priorityColor = when (task.priority) {
+                                    "High" -> ComposeColor.Red
+                                    "Medium" -> ComposeColor(0xFF7E57C2)
+                                    else -> ComposeColor.Gray
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+                    }
+                }
+            }
+
+            // COMPLETED SECTION
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isCompletedExpanded = !isCompletedExpanded }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Completed", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = if (isCompletedExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null, tint = TextSecondary
+                    )
+                }
+
+                if (isCompletedExpanded) {
+                    if (completedTasks.isEmpty()) {
+                        Text(text = "So empty...", color = TextSecondary, modifier = Modifier.padding(vertical = 12.dp))
+                    } else {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        completedTasks.sortedBy { it.startTime }.forEach { task ->
+                            TaskCard(
+                                title = task.title,
+                                time = "${task.startTime} - ${task.endTime}",
+                                priority = task.priority.uppercase(),
+                                isCompleted = task.isCompleted,
+                                showCheckbox = true,
+                                onCheckedChange = { onToggleTaskCompletion(task) },
+                                priorityColor = when (task.priority) {
+                                    "High" -> ComposeColor.Red
+                                    "Medium" -> ComposeColor(0xFF7E57C2)
+                                    else -> ComposeColor.Gray
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
                         }
                     }
                 }
@@ -339,7 +389,7 @@ fun HomePageNoTaskScreen(
         }
     }
 
-    // add task menu
+    // add / postpone task menu
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
@@ -354,19 +404,44 @@ fun HomePageNoTaskScreen(
             },
             modifier = Modifier.fillMaxHeight(0.92f)
         ) {
-            AddTaskScreen(
-                onCancel = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        if (!sheetState.isVisible) showBottomSheet = false
+            if (taskToPostpone != null) {
+                // Render in Postpone Mode
+                AddTaskScreen(
+                    initialTitle = taskToPostpone!!.title,
+                    initialStartTime = taskToPostpone!!.startTime,
+                    initialEndTime = taskToPostpone!!.endTime,
+                    initialPriority = taskToPostpone!!.priority,
+                    initialRepeat = taskToPostpone!!.repeat,
+                    isPostponeMode = true,
+                    onCancel = {
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            if (!sheetState.isVisible) showBottomSheet = false
+                        }
+                    },
+                    onSave = { title, startTime, endTime, priority, repeat, postponeDay ->
+                        onPostponeTask(taskToPostpone!!, title, startTime, endTime, priority, repeat, postponeDay ?: "Tomorrow")
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            if (!sheetState.isVisible) showBottomSheet = false
+                        }
                     }
-                },
-                onSave = { title, startTime, endTime, priority, repeat ->
-                    onSaveNewTask(title, startTime, endTime, priority, repeat, targetTaskDayIsTomorrow)
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        if (!sheetState.isVisible) showBottomSheet = false
+                )
+            } else {
+                // Render in Add Mode
+                AddTaskScreen(
+                    isPostponeMode = false,
+                    onCancel = {
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            if (!sheetState.isVisible) showBottomSheet = false
+                        }
+                    },
+                    onSave = { title, startTime, endTime, priority, repeat, _ ->
+                        onSaveNewTask(title, startTime, endTime, priority, repeat, targetTaskDayIsTomorrow)
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            if (!sheetState.isVisible) showBottomSheet = false
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }
@@ -388,7 +463,9 @@ fun TaskCard(
     priorityColor: ComposeColor,
     isCompleted: Boolean = false,
     showCheckbox: Boolean = true,
-    onCheckedChange: () -> Unit = {}
+    showPostpone: Boolean = false,
+    onCheckedChange: () -> Unit = {},
+    onPostponeClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -433,6 +510,29 @@ fun TaskCard(
                 Text(text = time, color = TextSecondary, fontSize = 13.sp)
             }
             Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextSecondary)
+        }
+
+        if (showPostpone && !isCompleted) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(Secondary.copy(alpha = 0.15f))
+                        .clickable { onPostponeClick() }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Postpone",
+                        color = Secondary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
         }
     }
 }

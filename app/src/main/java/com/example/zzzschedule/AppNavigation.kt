@@ -96,6 +96,28 @@ fun AppNavigation() {
                             task
                         }
                     }
+                },
+                onPostponeTask = { oldTask, newTitle, newStart, newEnd, newPriority, newRepeat, postponeDate ->
+                    val updatedTasks = tasks.map { task ->
+                        if (task == oldTask) {
+                            task.copy(isPostponed = true, postponedToDate = postponeDate)
+                        } else {
+                            task
+                        }
+                    }
+                    
+                    val tomorrowDate = com.example.zzzschedule.home.getNext7Days().getOrNull(1)
+                    val isTomorrow = postponeDate == tomorrowDate || postponeDate == "Tomorrow"
+                    
+                    val newTask = Task(
+                        title = newTitle,
+                        startTime = newStart,
+                        endTime = newEnd,
+                        priority = newPriority,
+                        repeat = newRepeat,
+                        isTomorrow = isTomorrow
+                    )
+                    tasks = updatedTasks + newTask
                 }
             )
         }

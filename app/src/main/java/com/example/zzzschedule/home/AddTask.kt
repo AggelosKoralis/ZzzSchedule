@@ -33,7 +33,10 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.window.DialogProperties
-
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import androidx.compose.material.icons.filled.Event
 
 private val Background = Color(0xFF141317)
 private val Surface = Color(0xFF201F23)
@@ -52,17 +55,29 @@ private val Outline = Color(0xFF49454F)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskScreen(
+    initialTitle: String = "",
+    initialStartTime: String = "09:00",
+    initialEndTime: String = "10:30",
+    initialPriority: String = "Low",
+    initialRepeat: String = "None",
+    isPostponeMode: Boolean = false,
     onCancel: () -> Unit = {},
-    onSave: (title: String, startTime: String, endTime: String, priority: String, repeat: String) -> Unit = { _, _, _, _, _ -> }
+    // Added postponeDay to the return closure
+    onSave: (title: String, startTime: String, endTime: String, priority: String, repeat: String, postponeDay: String?) -> Unit = { _, _, _, _, _, _ -> }
 ) {
-    var title by remember { mutableStateOf("") }
-    var startTime by remember { mutableStateOf("09:00") }
-    var endTime by remember { mutableStateOf("10:30") }
-    var priority by remember { mutableStateOf("Low") }
-    var repeat by remember { mutableStateOf("None") }
+    var title by remember { mutableStateOf(initialTitle) }
+    var startTime by remember { mutableStateOf(initialStartTime) }
+    var endTime by remember { mutableStateOf(initialEndTime) }
+    var priority by remember { mutableStateOf(initialPriority) }
+    var repeat by remember { mutableStateOf(initialRepeat) }
+
+    // Postpone state
+    val availableDates = remember { getNext7Days() }
+    var postponeDay by remember { mutableStateOf(availableDates[1]) } // Default to tomorrow
 
     var showPriorityDialog by remember { mutableStateOf(false) }
     var showRepeatDialog by remember { mutableStateOf(false) }
+    var showPostponeDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -71,7 +86,6 @@ fun AddTaskScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
     ) {
-        // Dynamic Bottom Sheet Headers replacing TopAppBar
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -80,9 +94,16 @@ fun AddTaskScreen(
             TextButton(onClick = onCancel, colors = ButtonDefaults.textButtonColors(contentColor = Secondary)) {
                 Text(text = "Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-            Text(text = "Add Task", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = if (isPostponeMode) "Postpone Task" else "Add Task",
+                color = TextPrimary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
             Button(
-                onClick = { onSave(title, startTime, endTime, priority, repeat) },
+                onClick = {
+                    onSave(title, startTime, endTime, priority, repeat, if (isPostponeMode) postponeDay else null)
+                },
                 shape = RoundedCornerShape(100.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Secondary, contentColor = Color(0xFF22005C))
             ) {
@@ -91,6 +112,17 @@ fun AddTaskScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        if (isPostponeMode) {
+            SelectionRow(
+                title = "Postpone to Date",
+                value = postponeDay,
+                icon = Icons.Default.Event,
+                iconColor = Secondary,
+                onSelect = { showPostponeDialog = true }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         Text(text = "Task Title", color = Primary, fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.height(8.dp))
@@ -131,7 +163,7 @@ fun AddTaskScreen(
             onDismiss = { showPriorityDialog = false },
             onSelected = {
                 priority = it
-                showPriorityDialog = false // <-- Added this
+                showPriorityDialog = false
             }
         )
     }
@@ -143,7 +175,19 @@ fun AddTaskScreen(
             onDismiss = { showRepeatDialog = false },
             onSelected = {
                 repeat = it
-                showRepeatDialog = false // <-- Added this
+                showRepeatDialog = false
+            }
+        )
+    }
+    if (showPostponeDialog) {
+        SelectionDialog(
+            title = "Postpone to",
+            options = availableDates,
+            selected = postponeDay,
+            onDismiss = { showPostponeDialog = false },
+            onSelected = {
+                postponeDay = it
+                showPostponeDialog = false
             }
         )
     }
@@ -301,4 +345,18 @@ private fun SelectionDialog(
         },
         confirmButton = {}
     )
+}
+
+fun getNext7Days(): List<String> {
+    // "EEE" adds the short day name (Mon, Tue, Wed...)
+    val formatter = SimpleDateFormat("EEE, MMM dd", Locale.getDefault())
+    val calendar = Calendar.getInstance()
+    val dates = mutableListOf<String>()
+
+    for (i in 0..7) {
+        dates.add(formatter.format(calendar.time))
+        calendar.add(Calendar.DAY_OF_YEAR, 1)
+    }
+
+    return dates
 }
