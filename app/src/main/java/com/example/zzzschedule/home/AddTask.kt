@@ -251,6 +251,7 @@ private fun handleTimeInput(old: TextFieldValue, new: TextFieldValue): TextField
             chars[cursorPosition] = insertedChar
             if (nextCursor == 2) nextCursor = 3
         }
+        
         return TextFieldValue(String(chars), TextRange(nextCursor))
     }
 
