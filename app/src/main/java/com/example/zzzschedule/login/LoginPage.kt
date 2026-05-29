@@ -2,12 +2,14 @@ package com.example.zzzschedule.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable // Added for clickability
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable // Added for dialog options
-import androidx.compose.foundation.selection.selectableGroup // Added for dialog options
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -20,8 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role // Added for accessibility role mapping
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -44,14 +49,15 @@ fun LoginPageScreen(
         sleepHours: Int
     ) -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+
     var username by remember { mutableStateOf("") }
     var age by remember { mutableStateOf("") }
     var occupation by remember { mutableStateOf("Select") }
-    var showOccupationDialog by remember { mutableStateOf(false) } // Renamed from expanded
+    var showOccupationDialog by remember { mutableStateOf(false) }
     var sleepHours by remember { mutableFloatStateOf(7f) }
     var loading by remember { mutableStateOf(false) }
 
-    // Track whether the user has attempted to submit (triggers error visibility)
     var showErrors by remember { mutableStateOf(false) }
 
     val occupations = listOf(
@@ -63,9 +69,8 @@ fun LoginPageScreen(
         "Select"
     )
 
-    // Validation Rules
     val isUsernameValid = username.isNotBlank()
-    val isAgeValid = age.toIntOrNull()?.let { it in 13..99 } ?: false // Strictly 13 to 99
+    val isAgeValid = age.toIntOrNull()?.let { it in 13..99 } ?: false
     val isOccupationValid = occupation != "Select" && occupation.isNotBlank()
     val isFormValid = isUsernameValid && isAgeValid && isOccupationValid
 
@@ -78,6 +83,13 @@ fun LoginPageScreen(
                 .fillMaxSize()
                 .background(Background)
                 .padding(padding)
+                .imePadding() // OPTIMIZATION: Dynamically adds padding when the keyboard is open
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    focusManager.clearFocus()
+                }
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
         ) {
@@ -193,7 +205,8 @@ fun LoginPageScreen(
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary,
                         errorContainerColor = SurfaceLow
-                    )
+                    ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -207,7 +220,6 @@ fun LoginPageScreen(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Replaced ExposedDropdownMenuBox with a transparent overlay setup
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = if (occupation == "Select") "" else occupation,
@@ -236,12 +248,14 @@ fun LoginPageScreen(
                         )
                     )
 
-                    // Transparent click interceptor layer over the form field
                     Box(
                         modifier = Modifier
                             .matchParentSize()
                             .clip(RoundedCornerShape(14.dp))
-                            .clickable { showOccupationDialog = true }
+                            .clickable {
+                                focusManager.clearFocus()
+                                showOccupationDialog = true
+                            }
                     )
                 }
 
@@ -337,7 +351,6 @@ fun LoginPageScreen(
         }
     }
 
-    // Dynamic rendering of the reused Selection Dialog component
     if (showOccupationDialog) {
         SelectionDialog(
             title = "Select Occupation",
