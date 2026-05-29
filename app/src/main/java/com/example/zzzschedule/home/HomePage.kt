@@ -402,45 +402,50 @@ fun HomePageNoTaskScreen(
                     height = 5.dp
                 )
             },
-            modifier = Modifier.fillMaxHeight(0.92f)
+            modifier = Modifier.fillMaxSize()
         ) {
-            if (taskToPostpone != null) {
-                // Render in Postpone Mode
-                AddTaskScreen(
-                    initialTitle = taskToPostpone!!.title,
-                    initialStartTime = taskToPostpone!!.startTime,
-                    initialEndTime = taskToPostpone!!.endTime,
-                    initialPriority = taskToPostpone!!.priority,
-                    initialRepeat = taskToPostpone!!.repeat,
-                    isPostponeMode = true,
-                    onCancel = {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) showBottomSheet = false
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = SurfaceLow
+            ) {
+                if (taskToPostpone != null) {
+                    // Render in Postpone Mode
+                    AddTaskScreen(
+                        initialTitle = taskToPostpone!!.title,
+                        initialStartTime = taskToPostpone!!.startTime,
+                        initialEndTime = taskToPostpone!!.endTime,
+                        initialPriority = taskToPostpone!!.priority,
+                        initialRepeat = taskToPostpone!!.repeat,
+                        isPostponeMode = true,
+                        onCancel = {
+                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                if (!sheetState.isVisible) showBottomSheet = false
+                            }
+                        },
+                        onSave = { title, startTime, endTime, priority, repeat, postponeDay ->
+                            onPostponeTask(taskToPostpone!!, title, startTime, endTime, priority, repeat, postponeDay ?: "Tomorrow")
+                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                if (!sheetState.isVisible) showBottomSheet = false
+                            }
                         }
-                    },
-                    onSave = { title, startTime, endTime, priority, repeat, postponeDay ->
-                        onPostponeTask(taskToPostpone!!, title, startTime, endTime, priority, repeat, postponeDay ?: "Tomorrow")
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) showBottomSheet = false
+                    )
+                } else {
+                    // Render in Add Mode
+                    AddTaskScreen(
+                        isPostponeMode = false,
+                        onCancel = {
+                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                if (!sheetState.isVisible) showBottomSheet = false
+                            }
+                        },
+                        onSave = { title, startTime, endTime, priority, repeat, _ ->
+                            onSaveNewTask(title, startTime, endTime, priority, repeat, targetTaskDayIsTomorrow)
+                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                if (!sheetState.isVisible) showBottomSheet = false
+                            }
                         }
-                    }
-                )
-            } else {
-                // Render in Add Mode
-                AddTaskScreen(
-                    isPostponeMode = false,
-                    onCancel = {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) showBottomSheet = false
-                        }
-                    },
-                    onSave = { title, startTime, endTime, priority, repeat, _ ->
-                        onSaveNewTask(title, startTime, endTime, priority, repeat, targetTaskDayIsTomorrow)
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) showBottomSheet = false
-                        }
-                    }
-                )
+                    )
+                }
             }
         }
     }
