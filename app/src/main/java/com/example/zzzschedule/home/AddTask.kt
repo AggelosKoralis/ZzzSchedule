@@ -4,14 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable // Added for full card clickability
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -23,15 +26,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.window.DialogProperties
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -195,80 +193,115 @@ fun AddTaskScreen(
 
 @Composable
 private fun TimeCard(label: String, value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
-    val focusManager = LocalFocusManager.current
-    LaunchedEffect(Unit) { if (value.isEmpty()) onValueChange("09:00") }
+    val timeParts = value.split(":")
+    var hour by remember { mutableIntStateOf(timeParts.getOrNull(0)?.toIntOrNull() ?: 9) }
+    var minute by remember { mutableIntStateOf(timeParts.getOrNull(1)?.toIntOrNull() ?: 0) }
 
-    var textFieldValue by remember { mutableStateOf(TextFieldValue(text = value.ifEmpty { "09:00" })) }
-    LaunchedEffect(value) {
-        if (value.isNotEmpty() && value != textFieldValue.text) {
-            textFieldValue = textFieldValue.copy(text = value)
-        }
+    // Update parent when either picker changes
+    LaunchedEffect(hour, minute) {
+        onValueChange(String.format(Locale.getDefault(), "%02d:%02d", hour, minute))
     }
+
+    val hourItems = remember { (0..23).map { String.format(Locale.getDefault(), "%02d", it) } }
+    val minuteItems = remember { (0..59).map { String.format(Locale.getDefault(), "%02d", it) } }
 
     Column(
         modifier = modifier
             .background(Surface, RoundedCornerShape(20.dp))
             .border(1.dp, Outline.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
-            .padding(14.dp)
+            .padding(14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(text = label, color = TextPrimary, fontWeight = FontWeight.Medium)
-        Spacer(modifier = Modifier.height(6.dp))
-        TextField(
-            value = textFieldValue,
-            onValueChange = { newValue ->
-                val processedValue = handleTimeInput(textFieldValue, newValue)
-                textFieldValue = processedValue
-                onValueChange(processedValue.text)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
-                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
-        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            InfiniteWheelPicker(
+                items = hourItems,
+                initialIndex = hour,
+                onItemSelected = { hour = it },
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = ":",
+                color = TextPrimary,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+            InfiniteWheelPicker(
+                items = minuteItems,
+                initialIndex = minute,
+                onItemSelected = { minute = it },
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 
-private fun handleTimeInput(old: TextFieldValue, new: TextFieldValue): TextFieldValue {
-    if (new.text.isEmpty()) return TextFieldValue("00:00", TextRange(0))
-    val lengthDiff = new.text.length - old.text.length
-    if (Math.abs(lengthDiff) > 1) return old
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun InfiniteWheelPicker(
+    modifier: Modifier = Modifier,
+    items: List<String>,
+    initialIndex: Int,
+    onItemSelected: (Int) -> Unit
+) {
+    val pageSize = items.size
+    // Use a large multiple of pageSize for "infinite" scrolling effect
+    val midIndex = Int.MAX_VALUE / 2 - (Int.MAX_VALUE / 2 % pageSize)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = midIndex + initialIndex - 1)
+    val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
 
-    if (lengthDiff == 1) {
-        val cursorPosition = old.selection.start
-        if (cursorPosition >= 5) return old
-        val insertedChar = new.text[cursorPosition]
-        if (!insertedChar.isDigit()) return old
-
-        val chars = old.text.toCharArray()
-        var nextCursor = cursorPosition + 1
-        if (cursorPosition == 2) {
-            chars[3] = insertedChar
-            nextCursor = 4
-        } else {
-            chars[cursorPosition] = insertedChar
-            if (nextCursor == 2) nextCursor = 3
+    val currentCenterIndex by remember {
+        derivedStateOf {
+            (listState.firstVisibleItemIndex + 1) % pageSize
         }
-
-        return TextFieldValue(String(chars), TextRange(nextCursor))
     }
 
-    if (lengthDiff == -1) {
-        val deletedPosition = old.selection.start - 1
-        if (deletedPosition < 0) return old
-        val chars = old.text.toCharArray()
-        var nextCursor = deletedPosition
-        if (deletedPosition == 2) {
-            chars[1] = '0'
-            nextCursor = 1
-        } else {
-            chars[deletedPosition] = '0'
-        }
-        return TextFieldValue(String(chars), TextRange(nextCursor))
+    LaunchedEffect(currentCenterIndex) {
+        onItemSelected(currentCenterIndex)
     }
-    return new
+
+    Box(modifier = modifier.height(120.dp), contentAlignment = Alignment.Center) {
+        LazyColumn(
+            state = listState,
+            flingBehavior = flingBehavior,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            items(Int.MAX_VALUE) { index ->
+                val itemIndex = index % pageSize
+                val isSelected = itemIndex == currentCenterIndex
+
+                Box(
+                    modifier = Modifier.height(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = items[itemIndex],
+                        fontSize = if (isSelected) 22.sp else 18.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) TextPrimary else TextSecondary.copy(alpha = 0.35f)
+                    )
+                }
+            }
+        }
+        
+        // Optional: faint selection indicators
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 8.dp).offset(y = (-20).dp),
+            thickness = 0.5.dp,
+            color = Outline.copy(alpha = 0.2f)
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 8.dp).offset(y = 20.dp),
+            thickness = 0.5.dp,
+            color = Outline.copy(alpha = 0.2f)
+        )
+    }
 }
 
 @Composable

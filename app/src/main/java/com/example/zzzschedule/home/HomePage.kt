@@ -229,14 +229,6 @@ fun HomePageNoTaskScreen(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 30.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-//                    Box(
-//                        modifier = Modifier.size(90.dp).clip(CircleShape).background(SurfaceHigh),
-//                        contentAlignment = Alignment.Center
-//                    ) {
-//                        Icon(imageVector = Icons.Default.EventAvailable, contentDescription = null, tint = Primary, modifier = Modifier.size(36.dp))
-//                    }
-
-//                    Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
                         text = if (selectedDay == "Today") "Nothing scheduled for today!" else "Lots of free time tomorrow!",
