@@ -190,7 +190,7 @@ fun HomePageNoTaskScreen(
                 }
             }
 
-            // ... (DAY SELECTOR AND EMPTY STATE REMAIN UNCHANGED) ...
+            // DAY SELECTOR AND EMPTY STATE REMAIN UNCHANGED
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(
@@ -224,23 +224,27 @@ fun HomePageNoTaskScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             if (activeTasks.isEmpty()) {
-                // ... (EMPTY STATE REMAINS THE SAME) ...
+                // EMPTY STATE REMAINS THE SAME
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 30.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier.size(90.dp).clip(CircleShape).background(SurfaceHigh),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(imageVector = Icons.Default.EventAvailable, contentDescription = null, tint = Primary, modifier = Modifier.size(36.dp))
-                    }
-                    Spacer(modifier = Modifier.height(20.dp))
+//                    Box(
+//                        modifier = Modifier.size(90.dp).clip(CircleShape).background(SurfaceHigh),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//                        Icon(imageVector = Icons.Default.EventAvailable, contentDescription = null, tint = Primary, modifier = Modifier.size(36.dp))
+//                    }
+
+//                    Spacer(modifier = Modifier.height(20.dp))
+
                     Text(
-                        text = if (selectedDay == "Today") "Lots of free time today!" else "You are free tomorrow!",
+                        text = if (selectedDay == "Today") "Nothing scheduled for today!" else "Lots of free time tomorrow!",
                         color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Medium
                     )
+
                     Spacer(modifier = Modifier.height(24.dp))
+
                     Button(
                         onClick = {
                             taskToPostpone = null // Ensure it's a new task
@@ -269,7 +273,7 @@ fun HomePageNoTaskScreen(
                         targetTaskDayIsTomorrow = selectedDay == "Tomorrow"
                         showBottomSheet = true
                     }) {
-                        Icon(imageVector = Icons.Default.AddCircle, contentDescription = "Add Task", tint = Primary, modifier = Modifier.size(36.dp))
+                        Icon(imageVector = Icons.Default.AddCircle, contentDescription = "Add Task", tint = Primary, modifier = Modifier.size(38.dp))
                     }
                 }
 
@@ -342,50 +346,6 @@ fun HomePageNoTaskScreen(
                     }
                 }
             }
-
-            // COMPLETED SECTION
-            Spacer(modifier = Modifier.height(8.dp))
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { isCompletedExpanded = !isCompletedExpanded }
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Completed", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = if (isCompletedExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null, tint = TextSecondary
-                    )
-                }
-
-                if (isCompletedExpanded) {
-                    if (completedTasks.isEmpty()) {
-                        Text(text = "So empty...", color = TextSecondary, modifier = Modifier.padding(vertical = 12.dp))
-                    } else {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        completedTasks.sortedBy { it.startTime }.forEach { task ->
-                            TaskCard(
-                                title = task.title,
-                                time = "${task.startTime} - ${task.endTime}",
-                                priority = task.priority.uppercase(),
-                                isCompleted = task.isCompleted,
-                                showCheckbox = true,
-                                onCheckedChange = { onToggleTaskCompletion(task) },
-                                priorityColor = when (task.priority) {
-                                    "High" -> ComposeColor.Red
-                                    "Medium" -> ComposeColor(0xFF7E57C2)
-                                    else -> ComposeColor.Gray
-                                }
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(60.dp))
         }
     }
 
@@ -481,23 +441,6 @@ fun TaskCard(
             .padding(18.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (showCheckbox) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(if (isCompleted) Primary else Color.Transparent)
-                        .border(1.dp, if (isCompleted) Primary else TextSecondary, CircleShape)
-                        .clickable { onCheckedChange() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isCompleted) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = Color(0xFF37265E), modifier = Modifier.size(16.dp))
-                    }
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-            }
-
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = title, color = if (isCompleted) TextSecondary else TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
@@ -514,7 +457,9 @@ fun TaskCard(
                 Spacer(modifier = Modifier.height(6.6.dp))
                 Text(text = time, color = TextSecondary, fontSize = 13.sp)
             }
-            Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextSecondary)
+
+            // MAYBE CHANGE THIS TO AN EDIT BUTTON (pencil), HOWEVER IT'S NOT PART OF OUR TASKS
+//            Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextSecondary)
         }
 
         if (showPostpone && !isCompleted) {
