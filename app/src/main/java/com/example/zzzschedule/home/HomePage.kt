@@ -94,20 +94,38 @@ fun HomePageNoTaskScreen(
     )
 
     val currentDayTasks = remember(tasks, selectedDay) {
+        val todayDate = getNext7Days().getOrNull(0)
+        val tomorrowDate = getNext7Days().getOrNull(1)
+
         if (selectedDay == "Today") {
-            tasks.filter { !it.isTomorrow }
+            // Today: Show tasks meant for today.
+            // Exclude new tasks postponed to other days (postponedToDate != null && !isPostponed)
+            // unless they are postponed TO today specifically.
+            tasks.filter { task ->
+                if (task.isTomorrow) return@filter false
+                if (task.isPostponed) return@filter true // Keep audit trail of postponed tasks
+                
+                // Active tasks: only show if they are for today
+                task.postponedToDate == null || task.postponedToDate == todayDate
+            }
         } else {
-            tasks.filter { it.isTomorrow || (!it.isTomorrow && it.repeat.equals("daily", ignoreCase = true)) }
-                .map { task ->
-                    if (!task.isTomorrow && task.repeat.equals("daily", ignoreCase = true)) {
-                        task.copy(isCompleted = false)
-                    } else {
-                        task
-                    }
+            // Tomorrow (Jun 2): Only show tasks meant explicitly for tomorrow,
+            // OR daily tasks that haven't been postponed!
+            tasks.filter { task ->
+                val isMeantForTomorrow = task.isTomorrow && 
+                    (task.postponedToDate == null || task.isPostponed || task.postponedToDate == tomorrowDate)
+                
+                isMeantForTomorrow || task.repeat.equals("daily", ignoreCase = true)
+            }.map { task ->
+                // If it's a daily task appearing on tomorrow's view, reset its completed status
+                if (task.repeat.equals("daily", ignoreCase = true) && !task.isTomorrow) {
+                    task.copy(isCompleted = false)
+                } else {
+                    task
                 }
+            }
         }
     }
-
     val activeTasks = currentDayTasks.filter { !it.isCompleted && !it.isPostponed }
     val completedTasks = currentDayTasks.filter { it.isCompleted && !it.isPostponed }
     val postponedTasks = currentDayTasks.filter { it.isPostponed }
@@ -442,10 +460,20 @@ fun TaskCard(
             .border(1.dp, ComposeColor.White.copy(alpha = 0.05f), RoundedCornerShape(22.dp))
             .padding(18.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Main text info column takes up remaining space
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = title, color = if (isCompleted) TextSecondary else TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        text = title,
+                        color = if (isCompleted) TextSecondary else TextPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f, fill = false) // Prevents long titles from pushing UI out
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
@@ -460,22 +488,15 @@ fun TaskCard(
                 Text(text = time, color = TextSecondary, fontSize = 13.sp)
             }
 
-            // MAYBE CHANGE THIS TO AN EDIT BUTTON (pencil), HOWEVER IT'S NOT PART OF OUR TASKS
-//            Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextSecondary)
-        }
-
-        if (showPostpone && !isCompleted) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
+            // Postpone button aligned on the same row to the right
+            if (showPostpone && !isCompleted) {
+                Spacer(modifier = Modifier.width(12.dp))
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
                         .background(Secondary.copy(alpha = 0.15f))
                         .clickable { onPostponeClick() }
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = "Postpone",

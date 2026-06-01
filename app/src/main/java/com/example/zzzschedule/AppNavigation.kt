@@ -115,7 +115,8 @@ fun AppNavigation() {
                         endTime = newEnd,
                         priority = newPriority,
                         repeat = newRepeat,
-                        isTomorrow = isTomorrow
+                        isTomorrow = isTomorrow,
+                        postponedToDate = if (!isTomorrow && postponeDate != com.example.zzzschedule.home.getNext7Days().getOrNull(0)) postponeDate else null
                     )
                     tasks = updatedTasks + newTask
                 }
