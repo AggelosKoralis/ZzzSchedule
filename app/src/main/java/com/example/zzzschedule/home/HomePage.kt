@@ -403,12 +403,22 @@ fun HomePageNoTaskScreen(
     }
 }
 
-fun calculateEnergy(sleepHours: Float): Float {
-    val hours = sleepHours.coerceIn(0f, 12f)
-    val midpoint = 6.5f
-    val steepness = 1.2f
-    val k = (hours - midpoint) * steepness
-    val sigmoid = (k / (1f + kotlin.math.abs(k)))
+fun calculateEnergy(sleepQuality: Float): Float {
+    // Ensure the input stays within the 1% to 100% range
+    val quality = sleepQuality.coerceIn(1f, 100f)
+
+    // 50% acts as the inflection midpoint of the curve
+    val midpoint = 50f
+
+    // Adjusted steepness to ensure the curve stretches smoothly from 1 to 100
+    val steepness = 0.08f
+
+    val k = (quality - midpoint) * steepness
+
+    // Smooth algebraic sigmoid function
+    val sigmoid = k / (1f + kotlin.math.abs(k))
+
+    // Map the result from (-1 to 1) down to a clean (0.0 to 1.0) range
     return ((sigmoid + 1f) / 2f).coerceIn(0f, 1f)
 }
 

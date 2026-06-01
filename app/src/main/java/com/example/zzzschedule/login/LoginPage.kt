@@ -46,7 +46,7 @@ fun LoginPageScreen(
         username: String,
         age: String,
         occupation: String,
-        sleepHours: Int
+        sleepQuality: Int // Updated parameter
     ) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
@@ -55,7 +55,7 @@ fun LoginPageScreen(
     var age by remember { mutableStateOf("") }
     var occupation by remember { mutableStateOf("Select") }
     var showOccupationDialog by remember { mutableStateOf(false) }
-    var sleepHours by remember { mutableFloatStateOf(7f) }
+    var sleepQuality by remember { mutableFloatStateOf(65f) }
     var loading by remember { mutableStateOf(false) }
 
     var showErrors by remember { mutableStateOf(false) }
@@ -83,7 +83,7 @@ fun LoginPageScreen(
                 .fillMaxSize()
                 .background(Background)
                 .padding(padding)
-                .imePadding() // OPTIMIZATION: Dynamically adds padding when the keyboard is open
+                .imePadding()
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
@@ -259,38 +259,37 @@ fun LoginPageScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // SLEEP SLIDER
+                // SLEEP QUALITY SLIDER
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Bottom
                 ) {
                     Text(
-                        text = "Average night sleep:",
+                        text = "Average sleep quality:",
                         color = Primary,
                         fontWeight = FontWeight.Medium
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = sleepHours.toInt().toString(),
-                            color = Secondary,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "hours", color = TextSecondary)
-                    }
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Row(verticalAlignment = Alignment.Bottom) {
+//                        Text(
+//                            text = sleepQuality.toInt().toString(),
+//                            color = Secondary,
+//                            fontSize = 26.sp,
+//                            fontWeight = FontWeight.Bold
+//                        )
+//                        Spacer(modifier = Modifier.width(4.dp))
+//                        Text(text = "%", color = TextSecondary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+//                    }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Slider(
-                    value = sleepHours,
-                    onValueChange = { sleepHours = it },
-                    valueRange = 4f..12f,
-                    steps = 7,
+                    value = sleepQuality,
+                    onValueChange = { sleepQuality = it },
+                    valueRange = 1f..100f,
                     colors = SliderDefaults.colors(
                         thumbColor = Secondary,
                         activeTrackColor = Secondary,
@@ -302,9 +301,9 @@ fun LoginPageScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("4h", color = Outline)
-                    Text("8h", color = Outline)
-                    Text("12h", color = Outline)
+                    Text("Terrible", color = Color(0xFF807E8F))
+//                    Text("50%", color = Outline)
+                    Text("Great", color = Color(0xFF807E8F))
                 }
 
                 Spacer(modifier = Modifier.height(26.dp))
@@ -314,7 +313,7 @@ fun LoginPageScreen(
                     onClick = {
                         if (isFormValid) {
                             loading = true
-                            onContinue(username, age, occupation, sleepHours.toInt())
+                            onContinue(username, age, occupation, sleepQuality.toInt())
                         } else {
                             showErrors = true
                         }
