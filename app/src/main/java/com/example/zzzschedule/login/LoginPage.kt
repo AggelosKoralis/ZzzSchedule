@@ -144,9 +144,6 @@ fun LoginPageScreen(
                     onValueChange = { username = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Enter your username") },
-                    trailingIcon = {
-                        Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null)
-                    },
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
                     isError = showErrors && !isUsernameValid,
@@ -186,15 +183,12 @@ fun LoginPageScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Enter your age") },
-                    trailingIcon = {
-                        Icon(imageVector = Icons.Default.CalendarToday, contentDescription = null)
-                    },
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
                     isError = showErrors && !isAgeValid,
                     supportingText = {
                         if (showErrors && !isAgeValid) {
-                            Text("Age must be a number between 13 and 99")
+                            Text("Age must be between 13 and 99")
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
@@ -226,9 +220,6 @@ fun LoginPageScreen(
                         onValueChange = {},
                         readOnly = true,
                         placeholder = { Text("Select your occupation") },
-                        trailingIcon = {
-                            Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
-                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         isError = showErrors && !isOccupationValid,
@@ -271,17 +262,6 @@ fun LoginPageScreen(
                         color = Primary,
                         fontWeight = FontWeight.Medium
                     )
-//                    Spacer(modifier = Modifier.width(8.dp))
-//                    Row(verticalAlignment = Alignment.Bottom) {
-//                        Text(
-//                            text = sleepQuality.toInt().toString(),
-//                            color = Secondary,
-//                            fontSize = 26.sp,
-//                            fontWeight = FontWeight.Bold
-//                        )
-//                        Spacer(modifier = Modifier.width(4.dp))
-//                        Text(text = "%", color = TextSecondary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-//                    }
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
