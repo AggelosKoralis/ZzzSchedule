@@ -88,15 +88,6 @@ fun AppNavigation() {
                     )
                     tasks = tasks + newTask
                 },
-                onToggleTaskCompletion = { taskToToggle ->
-                    tasks = tasks.map { task ->
-                        if (task == taskToToggle) {
-                            task.copy(isCompleted = !task.isCompleted)
-                        } else {
-                            task
-                        }
-                    }
-                },
                 onPostponeTask = { oldTask, newTitle, newStart, newEnd, newPriority, newRepeat, postponeDate ->
                     val updatedTasks = tasks.map { task ->
                         if (task == oldTask) {

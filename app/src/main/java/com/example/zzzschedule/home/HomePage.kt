@@ -54,9 +54,43 @@ data class Task(
     val priority: String,
     val repeat: String,
     val isTomorrow: Boolean = false,
-    val isCompleted: Boolean = false,
     val isPostponed: Boolean = false,
     val postponedToDate: String? = null,
+)
+
+val sampleTasksForToday = listOf(
+    Task(
+        title = "Criminology Class",
+        startTime = "08:00",
+        endTime = "10:00",
+        priority = "Medium",
+        repeat = "Daily",
+        isTomorrow = false
+    ),
+    Task(
+        title = "Supermarket",
+        startTime = "12:00",
+        endTime = "12:30",
+        priority = "Low",
+        repeat = "Weekly",
+        isTomorrow = false
+    ),
+    Task(
+        title = "Dinner with Lorenzo",
+        startTime = "20:00",
+        endTime = "22:30",
+        priority = "High",
+        repeat = "None",
+        isTomorrow = false
+    ),
+    Task(
+        title = "Water the Plants",
+        startTime = "18:00",
+        endTime = "18:15",
+        priority = "Low",
+        repeat = "Daily",
+        isTomorrow = false
+    )
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,16 +103,11 @@ fun HomePageNoTaskScreen(
     tasks: List<Task> = emptyList(),
     selectedDay: String = "Today",
     onDayChange: (String) -> Unit = {},
-    onHomeClick: () -> Unit = {},
-    onScheduleClick: () -> Unit = {},
-    onInsightsClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {},
     onSaveNewTask: (title: String, start: String, end: String, priority: String, repeat: String, isTomorrow: Boolean) -> Unit = { _, _, _, _, _, _ -> },
     onToggleTaskCompletion: (Task) -> Unit = {},
     // NEW CALLBACK: To handle postponing
     onPostponeTask: (oldTask: Task, newTitle: String, newStart: String, newEnd: String, newPriority: String, newRepeat: String, postponeDate: String) -> Unit = { _, _, _, _, _, _, _ -> }
 ) {
-    var isCompletedExpanded by remember { mutableStateOf(false) }
     var isPostponedExpanded by remember { mutableStateOf(false) }
 
     // --- BOTTOM SHEET STATE MANAGEMENT ---
@@ -104,30 +133,23 @@ fun HomePageNoTaskScreen(
             tasks.filter { task ->
                 if (task.isTomorrow) return@filter false
                 if (task.isPostponed) return@filter true // Keep audit trail of postponed tasks
-                
+
                 // Active tasks: only show if they are for today
                 task.postponedToDate == null || task.postponedToDate == todayDate
             }
         } else {
-            // Tomorrow (Jun 2): Only show tasks meant explicitly for tomorrow,
+            // Tomorrow: Only show tasks meant explicitly for tomorrow,
             // OR daily tasks that haven't been postponed!
             tasks.filter { task ->
-                val isMeantForTomorrow = task.isTomorrow && 
+                val isMeantForTomorrow = task.isTomorrow &&
                     (task.postponedToDate == null || task.isPostponed || task.postponedToDate == tomorrowDate)
-                
+
                 isMeantForTomorrow || task.repeat.equals("daily", ignoreCase = true)
-            }.map { task ->
-                // If it's a daily task appearing on tomorrow's view, reset its completed status
-                if (task.repeat.equals("daily", ignoreCase = true) && !task.isTomorrow) {
-                    task.copy(isCompleted = false)
-                } else {
-                    task
-                }
             }
         }
     }
-    val activeTasks = currentDayTasks.filter { !it.isCompleted && !it.isPostponed }
-    val completedTasks = currentDayTasks.filter { it.isCompleted && !it.isPostponed }
+    val activeTasks = currentDayTasks.filter { !it.isPostponed }
+//    val activeTasks = sampleTasksForToday
     val postponedTasks = currentDayTasks.filter { it.isPostponed }
 
     // Calculate energy once to use across the UI
@@ -297,7 +319,6 @@ fun HomePageNoTaskScreen(
                         title = task.title,
                         time = "${task.startTime} - ${task.endTime}",
                         priority = task.priority.uppercase(),
-                        isCompleted = task.isCompleted,
                         showCheckbox = selectedDay == "Today",
                         onCheckedChange = { onToggleTaskCompletion(task) },
                         priorityColor = when (task.priority) {
