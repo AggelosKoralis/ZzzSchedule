@@ -360,8 +360,8 @@ fun HomePageNoTaskScreen(
                                 onCheckedChange = { onToggleTaskCompletion(task) },
                                 priorityColor = when (task.priority) {
                                     "High" -> ComposeColor(0xFFEA7467)
-                                    "Medium" -> ComposeColor(0xFFF2B787)
-                                    else -> ComposeColor(0xFF7FDBBB)
+                                    "Medium" -> ComposeColor(0xFFF4BC8D)
+                                    else -> ComposeColor(0xFF65C6A4)
                                 },
                                 showPostpone = suggestPostponeForTargetDay && isLowPriority,
                                 onPostponeClick = {
@@ -406,9 +406,9 @@ fun HomePageNoTaskScreen(
                                 isCompleted = false,
                                 showCheckbox = false,
                                 priorityColor = when (task.priority) {
-                                    "High" -> ComposeColor.Red
-                                    "Medium" -> ComposeColor(0xFF7E57C2)
-                                    else -> ComposeColor.Gray
+                                    "High" -> ComposeColor(0xFFEA7467)
+                                    "Medium" -> ComposeColor(0xFFF4BC8D)
+                                    else -> ComposeColor(0xFF65C6A4)
                                 }
                             )
                             Spacer(modifier = Modifier.height(10.dp))
@@ -537,14 +537,14 @@ fun TaskCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(8.dp))
                             .background(priorityColor.copy(alpha = 0.2f))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(text = priority, color = priorityColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-                Spacer(modifier = Modifier.height(6.6.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(text = time, color = TextSecondary, fontSize = 13.sp)
             }
 
