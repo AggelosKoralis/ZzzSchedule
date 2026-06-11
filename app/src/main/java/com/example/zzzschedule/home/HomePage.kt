@@ -64,7 +64,7 @@ val sampleTasksForToday = listOf(
         startTime = "08:00",
         endTime = "10:00",
         priority = "Medium",
-        repeat = "Daily",
+        repeat = "Weekly",
         isTomorrow = false
     ),
     Task(
@@ -149,7 +149,6 @@ fun HomePageNoTaskScreen(
         }
     }
     val activeTasks = currentDayTasks.filter { !it.isPostponed }
-//    val activeTasks = sampleTasksForToday
     val postponedTasks = currentDayTasks.filter { it.isPostponed }
 
     // Calculate energy once to use across the UI

@@ -12,10 +12,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,6 +37,7 @@ private val Secondary = Color(0xFFD0BCFF)
 private val Outline = Color(0xFF49454F)
 private val TextPrimary = Color(0xFFE5E1E7)
 private val TextSecondary = Color(0xFFCAC4D0)
+private val SuccessGreen = Color(0xFF81C784) // Added success color for checkmarks
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +46,7 @@ fun LoginPageScreen(
         username: String,
         age: String,
         occupation: String,
-        sleepQuality: Int // Updated parameter
+        sleepQuality: Int
     ) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
@@ -69,9 +69,9 @@ fun LoginPageScreen(
         "Select"
     )
 
-    val isUsernameValid = username.isNotBlank()
+    val isUsernameValid = username.isNotBlank() && username.length <= 10
     val isAgeValid = age.toIntOrNull()?.let { it in 13..99 } ?: false
-    val isOccupationValid = occupation != "Select" && occupation.isNotBlank()
+    val isOccupationValid = occupation in occupations && occupation != "Select"
     val isFormValid = isUsernameValid && isAgeValid && isOccupationValid
 
     Scaffold(
@@ -141,15 +141,26 @@ fun LoginPageScreen(
 
                 OutlinedTextField(
                     value = username,
-                    onValueChange = { username = it },
+                    onValueChange = {
+                        if (it.length <= 10 && !it.contains(" ")) username = it
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Enter your username") },
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
                     isError = showErrors && !isUsernameValid,
+                    trailingIcon = {
+                        if (isUsernameValid) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Valid username",
+                                tint = SuccessGreen
+                            )
+                        }
+                    },
                     supportingText = {
                         if (showErrors && !isUsernameValid) {
-                            Text("Username cannot be empty")
+                            Text("Username cannot be empty and max 10 chars")
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
@@ -186,9 +197,18 @@ fun LoginPageScreen(
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
                     isError = showErrors && !isAgeValid,
+                    trailingIcon = {
+                        if (isAgeValid) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Valid age",
+                                tint = SuccessGreen
+                            )
+                        }
+                    },
                     supportingText = {
                         if (showErrors && !isAgeValid) {
-                            Text("Age must be between 13 and 99")
+                            Text("Age must be a number between 13 and 99")
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
@@ -223,9 +243,24 @@ fun LoginPageScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         isError = showErrors && !isOccupationValid,
+                        trailingIcon = {
+                            if (isOccupationValid) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Valid occupation",
+                                    tint = SuccessGreen
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Open dropdown",
+                                    tint = TextSecondary
+                                )
+                            }
+                        },
                         supportingText = {
                             if (showErrors && !isOccupationValid) {
-                                Text("Please select an occupation")
+                                Text("Please select a valid occupation")
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
@@ -282,7 +317,6 @@ fun LoginPageScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Terrible", color = Color(0xFF807E8F))
-//                    Text("50%", color = Outline)
                     Text("Great", color = Color(0xFF807E8F))
                 }
 
@@ -366,34 +400,36 @@ private fun SelectionDialog(
                 modifier = Modifier.selectableGroup()
             ) {
                 options.forEach { option ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
+                    if (option != "Select") {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = (option == selected),
+                                    onClick = {
+                                        onSelected(option)
+                                    },
+                                    role = Role.RadioButton
+                                )
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
                                 selected = (option == selected),
-                                onClick = {
-                                    onSelected(option)
-                                },
-                                role = Role.RadioButton
+                                onClick = null,
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = Primary,
+                                    unselectedColor = TextSecondary
+                                )
                             )
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = (option == selected),
-                            onClick = null,
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = Primary,
-                                unselectedColor = TextSecondary
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Text(
+                                text = option,
+                                color = TextPrimary
                             )
-                        )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Text(
-                            text = option,
-                            color = TextPrimary
-                        )
+                        }
                     }
                 }
             }

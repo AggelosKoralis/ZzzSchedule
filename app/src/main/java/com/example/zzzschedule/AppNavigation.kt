@@ -17,12 +17,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.zzzschedule.home.HomePageNoTaskScreen
 import com.example.zzzschedule.home.Task
+import com.example.zzzschedule.home.sampleTasksForToday
 import com.example.zzzschedule.login.LoginPageScreen
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    var tasks by remember { mutableStateOf(listOf<Task>()) }
+    var tasks by remember { mutableStateOf(sampleTasksForToday) }
 
     // Hoisted state to track selected day across screen switches
     var selectedDay by remember { mutableStateOf("Today") }
