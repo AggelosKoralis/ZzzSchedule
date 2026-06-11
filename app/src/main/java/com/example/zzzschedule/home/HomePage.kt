@@ -28,6 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -122,38 +125,32 @@ fun HomePageNoTaskScreen(
         skipPartiallyExpanded = false
     )
 
-    val currentDayTasks = remember(tasks, selectedDay) {
+    // Calculate energy once to use across the UI
+    val energyProgress = calculateEnergy(sleepHours.toFloat())
+
+    // Helper for task filtering
+    fun filterTasks(day: String): List<Task> {
         val todayDate = getNext7Days().getOrNull(0)
         val tomorrowDate = getNext7Days().getOrNull(1)
 
-        if (selectedDay == "Today") {
-            // Today: Show tasks meant for today.
-            // Exclude new tasks postponed to other days (postponedToDate != null && !isPostponed)
-            // unless they are postponed TO today specifically.
+        return if (day == "Today") {
             tasks.filter { task ->
                 if (task.isTomorrow) return@filter false
-                if (task.isPostponed) return@filter true // Keep audit trail of postponed tasks
-
-                // Active tasks: only show if they are for today
+                if (task.isPostponed) return@filter true
                 task.postponedToDate == null || task.postponedToDate == todayDate
             }
         } else {
-            // Tomorrow: Only show tasks meant explicitly for tomorrow,
-            // OR daily tasks that haven't been postponed!
             tasks.filter { task ->
                 val isMeantForTomorrow = task.isTomorrow &&
-                    (task.postponedToDate == null || task.isPostponed || task.postponedToDate == tomorrowDate)
-
+                        (task.postponedToDate == null || task.isPostponed || task.postponedToDate == tomorrowDate)
                 isMeantForTomorrow || task.repeat.equals("daily", ignoreCase = true)
             }
         }
     }
-    val activeTasks = currentDayTasks.filter { !it.isPostponed }
-    val postponedTasks = currentDayTasks.filter { it.isPostponed }
 
-    // Calculate energy once to use across the UI
-    val energyProgress = calculateEnergy(sleepHours.toFloat())
-    val suggestPostpone = energyProgress < 0.60f && selectedDay == "Today"
+    val postponedTasks = remember(tasks, selectedDay) {
+        filterTasks(selectedDay).filter { it.isPostponed }
+    }
 
     Scaffold(
         containerColor = Background,
@@ -229,7 +226,7 @@ fun HomePageNoTaskScreen(
                 }
             }
 
-            // DAY SELECTOR AND EMPTY STATE REMAIN UNCHANGED
+            // DAY SELECTOR (STATIC CONTAINER, SLIDING SELECTION)
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(
@@ -238,100 +235,143 @@ fun HomePageNoTaskScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(Surface)
                     .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                listOf("Today", "Tomorrow").forEach { day ->
-                    val isSelected = selectedDay == day
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val maxWidth = maxWidth
+                    val selectionOffset by animateDpAsState(
+                        targetValue = if (selectedDay == "Today") 0.dp else maxWidth / 2,
+                        label = "SelectionOffset"
+                    )
+
+                    // Sliding indicator background
                     Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .width(maxWidth / 2)
                             .height(40.dp)
+                            .offset(x = selectionOffset)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) Primary else Color.Transparent)
-                            .clickable { onDayChange(day) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = day,
-                            color = if (isSelected) Color(0xFF37265E) else TextSecondary,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                        )
+                            .background(Primary)
+                    )
+
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        listOf("Today", "Tomorrow").forEach { day ->
+                            val isSelected = selectedDay == day
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(40.dp)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { onDayChange(day) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = day,
+                                    color = if (isSelected) Color(0xFF37265E) else TextSecondary,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            if (activeTasks.isEmpty()) {
-                // EMPTY STATE REMAINS THE SAME
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 30.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-
-                    Text(
-                        text = if (selectedDay == "Today") "Nothing scheduled for today!" else "Lots of free time tomorrow!",
-                        color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Medium
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Button(
-                        onClick = {
-                            taskToPostpone = null // Ensure it's a new task
-                            targetTaskDayIsTomorrow = selectedDay == "Tomorrow"
-                            showBottomSheet = true
-                        },
-                        shape = RoundedCornerShape(100.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = Color(0xFF37265E)),
-                        modifier = Modifier.height(56.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Add Task", fontWeight = FontWeight.SemiBold)
+            // ANIMATED TASK LIST
+            AnimatedContent(
+                targetState = selectedDay,
+                transitionSpec = {
+                    if (targetState == "Tomorrow") {
+                        (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                            slideOutHorizontally { width -> -width } + fadeOut()
+                        )
+                    } else {
+                        (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                            slideOutHorizontally { width -> width } + fadeOut()
+                        )
                     }
+                },
+                label = "DayTransition"
+            ) { targetDay ->
+                val activeTasksForTargetDay = remember(tasks, targetDay) {
+                    filterTasks(targetDay).filter { !it.isPostponed }
                 }
-            } else {
-                // TASKS LIST
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "$selectedDay's Schedule", color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-                    IconButton(onClick = {
-                        taskToPostpone = null // Ensure it's a new task
-                        targetTaskDayIsTomorrow = selectedDay == "Tomorrow"
-                        showBottomSheet = true
-                    }) {
-                        Icon(imageVector = Icons.Default.AddCircle, contentDescription = "Add Task", tint = Primary, modifier = Modifier.size(38.dp))
-                    }
-                }
+                val suggestPostponeForTargetDay = energyProgress < 0.60f && targetDay == "Today"
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Column {
+                    if (activeTasksForTargetDay.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 30.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (targetDay == "Today") "Nothing scheduled for today!" else "Lots of free time tomorrow!",
+                                color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Medium
+                            )
 
-                val sortedTasks = activeTasks.sortedBy { it.startTime }
-                sortedTasks.forEach { task ->
-                    val isLowPriority = task.priority.equals("Low", ignoreCase = true)
+                            Spacer(modifier = Modifier.height(24.dp))
 
-                    TaskCard(
-                        title = task.title,
-                        time = "${task.startTime} - ${task.endTime}",
-                        priority = task.priority.uppercase(),
-                        showCheckbox = selectedDay == "Today",
-                        onCheckedChange = { onToggleTaskCompletion(task) },
-                        priorityColor = when (task.priority) {
-                            "High" -> ComposeColor.Red
-                            "Medium" -> ComposeColor(0xFF7E57C2)
-                            else -> ComposeColor.Gray
-                        },
-                        showPostpone = suggestPostpone && isLowPriority,
-                        onPostponeClick = {
-                            taskToPostpone = task
-                            showBottomSheet = true
+                            Button(
+                                onClick = {
+                                    taskToPostpone = null
+                                    targetTaskDayIsTomorrow = targetDay == "Tomorrow"
+                                    showBottomSheet = true
+                                },
+                                shape = RoundedCornerShape(100.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = Color(0xFF37265E)),
+                                modifier = Modifier.height(56.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = "Add Task", fontWeight = FontWeight.SemiBold)
+                            }
                         }
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "$targetDay's Schedule", color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                            IconButton(onClick = {
+                                taskToPostpone = null
+                                targetTaskDayIsTomorrow = targetDay == "Tomorrow"
+                                showBottomSheet = true
+                            }) {
+                                Icon(imageVector = Icons.Default.AddCircle, contentDescription = "Add Task", tint = Primary, modifier = Modifier.size(38.dp))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        activeTasksForTargetDay.sortedBy { it.startTime }.forEach { task ->
+                            val isLowPriority = task.priority.equals("Low", ignoreCase = true)
+
+                            TaskCard(
+                                title = task.title,
+                                time = "${task.startTime} - ${task.endTime}",
+                                priority = task.priority.uppercase(),
+                                showCheckbox = targetDay == "Today",
+                                onCheckedChange = { onToggleTaskCompletion(task) },
+                                priorityColor = when (task.priority) {
+                                    "High" -> ComposeColor.Red
+                                    "Medium" -> ComposeColor(0xFF7E57C2)
+                                    else -> ComposeColor.Gray
+                                },
+                                showPostpone = suggestPostponeForTargetDay && isLowPriority,
+                                onPostponeClick = {
+                                    taskToPostpone = task
+                                    showBottomSheet = true
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+                    }
                 }
             }
 

@@ -69,7 +69,7 @@ fun LoginPageScreen(
         "Select"
     )
 
-    val isUsernameValid = username.isNotBlank() && username.length <= 10
+    val isUsernameValid = username.isNotBlank() && username.length <= 12
     val isAgeValid = age.toIntOrNull()?.let { it in 13..99 } ?: false
     val isOccupationValid = occupation in occupations && occupation != "Select"
     val isFormValid = isUsernameValid && isAgeValid && isOccupationValid
@@ -142,7 +142,7 @@ fun LoginPageScreen(
                 OutlinedTextField(
                     value = username,
                     onValueChange = {
-                        if (it.length <= 10 && !it.contains(" ")) username = it
+                        if (it.length <= 12) username = it
                     },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Enter your username") },
