@@ -64,32 +64,32 @@ data class Task(
 val sampleTasksForToday = listOf(
     Task(
         title = "Criminology Class",
-        startTime = "08:00",
-        endTime = "10:00",
+        startTime = "10:00",
+        endTime = "12:00",
+        priority = "High",
+        repeat = "Weekly",
+        isTomorrow = false
+    ),
+    Task(
+        title = "Tennis match",
+        startTime = "18:00",
+        endTime = "19:30",
         priority = "Medium",
         repeat = "Weekly",
         isTomorrow = false
     ),
     Task(
-        title = "Supermarket",
-        startTime = "12:00",
-        endTime = "12:30",
-        priority = "Low",
+        title = "Klain Main coffee",
+        startTime = "16:30",
+        endTime = "18:30",
+        priority = "Medium",
         repeat = "Weekly",
         isTomorrow = false
     ),
     Task(
-        title = "Dinner with Lorenzo",
-        startTime = "20:00",
-        endTime = "22:30",
-        priority = "High",
-        repeat = "None",
-        isTomorrow = false
-    ),
-    Task(
-        title = "Water the Plants",
-        startTime = "18:00",
-        endTime = "18:15",
+        title = "Water the plants",
+        startTime = "09:00",
+        endTime = "09:30",
         priority = "Low",
         repeat = "Daily",
         isTomorrow = false
@@ -359,9 +359,9 @@ fun HomePageNoTaskScreen(
                                 showCheckbox = targetDay == "Today",
                                 onCheckedChange = { onToggleTaskCompletion(task) },
                                 priorityColor = when (task.priority) {
-                                    "High" -> ComposeColor.Red
-                                    "Medium" -> ComposeColor(0xFF7E57C2)
-                                    else -> ComposeColor.Gray
+                                    "High" -> ComposeColor(0xFFEA7467)
+                                    "Medium" -> ComposeColor(0xFFF2B787)
+                                    else -> ComposeColor(0xFF7FDBBB)
                                 },
                                 showPostpone = suggestPostponeForTargetDay && isLowPriority,
                                 onPostponeClick = {
