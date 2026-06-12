@@ -62,11 +62,9 @@ fun LoginPageScreen(
 
     val occupations = listOf(
         "Student",
+        "Working",
         "Working Student",
-        "Working Full Time",
-        "Working Part Time",
-        "Unemployed",
-        "Select"
+        "Unemployed"
     )
 
     val isUsernameValid = username.isNotBlank() && username.length <= 12

@@ -416,6 +416,7 @@ fun HomePageNoTaskScreen(
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(70.dp))
         }
     }
 
