@@ -2,11 +2,11 @@ package com.example.zzzschedule.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable // Added for full card clickability
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.interaction.MutableInteractionSource // Added for focus interceptor
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -21,7 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip // Added to clip ripple effect
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalFocusManager // Utilized to control keyboard and focus
 import androidx.compose.ui.window.DialogProperties
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -60,18 +60,18 @@ fun AddTaskScreen(
     initialRepeat: String = "None",
     isPostponeMode: Boolean = false,
     onCancel: () -> Unit = {},
-    // Added postponeDay to the return closure
     onSave: (title: String, startTime: String, endTime: String, priority: String, repeat: String, postponeDay: String?) -> Unit = { _, _, _, _, _, _ -> }
 ) {
+    val focusManager = LocalFocusManager.current // Access focus manager
+
     var title by remember { mutableStateOf(initialTitle) }
     var startTime by remember { mutableStateOf(initialStartTime) }
     var endTime by remember { mutableStateOf(initialEndTime) }
     var priority by remember { mutableStateOf(initialPriority) }
     var repeat by remember { mutableStateOf(initialRepeat) }
 
-    // Postpone state
     val availableDates = remember { getNext7Days() }
-    var postponeDay by remember { mutableStateOf(availableDates[1]) } // Default to tomorrow
+    var postponeDay by remember { mutableStateOf(availableDates[1]) }
 
     var showPriorityDialog by remember { mutableStateOf(false) }
     var showRepeatDialog by remember { mutableStateOf(false) }
@@ -81,6 +81,14 @@ fun AddTaskScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(SurfaceLow)
+            .imePadding() // Adjusts layout size dynamically when the keyboard appears
+            // Clears focus when clicking anywhere on the empty background layout
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                focusManager.clearFocus()
+            }
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
     ) {
@@ -100,6 +108,7 @@ fun AddTaskScreen(
             )
             Button(
                 onClick = {
+                    focusManager.clearFocus() // Drop focus before saving
                     onSave(title, startTime, endTime, priority, repeat, if (isPostponeMode) postponeDay else null)
                 },
                 shape = RoundedCornerShape(100.dp),
@@ -117,7 +126,10 @@ fun AddTaskScreen(
                 value = postponeDay,
                 icon = Icons.Default.Event,
                 iconColor = Secondary,
-                onSelect = { showPostponeDialog = true }
+                onSelect = {
+                    focusManager.clearFocus() // Clears focus to hide keyboard before showing dialog
+                    showPostponeDialog = true
+                }
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -146,9 +158,29 @@ fun AddTaskScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        SelectionRow(title = "Priority", value = priority, icon = Icons.Default.PriorityHigh, iconColor = Color(0xFFFFB4AB), onSelect = { showPriorityDialog = true })
+        SelectionRow(
+            title = "Priority",
+            value = priority,
+            icon = Icons.Default.PriorityHigh,
+            iconColor = Color(0xFFFFB4AB),
+            onSelect = {
+                focusManager.clearFocus() // Clears focus to hide keyboard before showing dialog
+                showPriorityDialog = true
+            }
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
-        SelectionRow(title = "Repeat", value = repeat, icon = Icons.Default.EventRepeat, iconColor = Secondary, onSelect = { showRepeatDialog = true })
+
+        SelectionRow(
+            title = "Repeat",
+            value = repeat,
+            icon = Icons.Default.EventRepeat,
+            iconColor = Secondary,
+            onSelect = {
+                focusManager.clearFocus() // Clears focus to hide keyboard before showing dialog
+                showRepeatDialog = true
+            }
+        )
 
         Spacer(modifier = Modifier.height(40.dp))
     }
@@ -197,7 +229,6 @@ private fun TimeCard(label: String, value: String, onValueChange: (String) -> Un
     var hour by remember { mutableIntStateOf(timeParts.getOrNull(0)?.toIntOrNull() ?: 9) }
     var minute by remember { mutableIntStateOf(timeParts.getOrNull(1)?.toIntOrNull() ?: 0) }
 
-    // Update parent when either picker changes
     LaunchedEffect(hour, minute) {
         onValueChange(String.format(Locale.getDefault(), "%02d:%02d", hour, minute))
     }
@@ -250,7 +281,6 @@ private fun InfiniteWheelPicker(
     onItemSelected: (Int) -> Unit
 ) {
     val pageSize = items.size
-    // Use a large multiple of pageSize for "infinite" scrolling effect
     val midIndex = Int.MAX_VALUE / 2 - (Int.MAX_VALUE / 2 % pageSize)
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = midIndex + initialIndex - 1)
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
@@ -289,8 +319,7 @@ private fun InfiniteWheelPicker(
                 }
             }
         }
-        
-        // Optional: faint selection indicators
+
         HorizontalDivider(
             modifier = Modifier.padding(horizontal = 8.dp).offset(y = (-20).dp),
             thickness = 0.5.dp,
@@ -342,9 +371,7 @@ private fun SelectionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = SurfaceHigh,
-        // 1. Turn off default platform stretching behavior
         properties = DialogProperties(usePlatformDefaultWidth = false),
-        // 2. Set a custom width (e.g., 85% of screen width or fixed dp like 300.dp)
         modifier = Modifier
             .fillMaxWidth(0.85f)
             .wrapContentHeight(),
@@ -382,7 +409,6 @@ private fun SelectionDialog(
 }
 
 fun getNext7Days(): List<String> {
-    // "EEE" adds the short day name (Mon, Tue, Wed...)
     val formatter = SimpleDateFormat("EEE, MMM dd", Locale.getDefault())
     val calendar = Calendar.getInstance()
     val dates = mutableListOf<String>()
