@@ -5,7 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.interaction.MutableInteractionSource // Added for focus interceptor
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,14 +22,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalFocusManager // Utilized to control keyboard and focus
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.window.DialogProperties
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -62,7 +60,7 @@ fun AddTaskScreen(
     onCancel: () -> Unit = {},
     onSave: (title: String, startTime: String, endTime: String, priority: String, repeat: String, postponeDay: String?) -> Unit = { _, _, _, _, _, _ -> }
 ) {
-    val focusManager = LocalFocusManager.current // Access focus manager
+    val focusManager = LocalFocusManager.current
 
     var title by remember { mutableStateOf(initialTitle) }
     var startTime by remember { mutableStateOf(initialStartTime) }
@@ -81,8 +79,7 @@ fun AddTaskScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(SurfaceLow)
-            .imePadding() // Adjusts layout size dynamically when the keyboard appears
-            // Clears focus when clicking anywhere on the empty background layout
+            .imePadding()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -108,7 +105,7 @@ fun AddTaskScreen(
             )
             Button(
                 onClick = {
-                    focusManager.clearFocus() // Drop focus before saving
+                    focusManager.clearFocus()
                     onSave(title, startTime, endTime, priority, repeat, if (isPostponeMode) postponeDay else null)
                 },
                 shape = RoundedCornerShape(100.dp),
@@ -127,7 +124,7 @@ fun AddTaskScreen(
                 icon = Icons.Default.Event,
                 iconColor = Secondary,
                 onSelect = {
-                    focusManager.clearFocus() // Clears focus to hide keyboard before showing dialog
+                    focusManager.clearFocus()
                     showPostponeDialog = true
                 }
             )
@@ -149,14 +146,7 @@ fun AddTaskScreen(
             )
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            TimeCard(label = "Start", value = startTime, onValueChange = { startTime = it }, modifier = Modifier.weight(1f))
-            TimeCard(label = "End", value = endTime, onValueChange = { endTime = it }, modifier = Modifier.weight(1f))
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         SelectionRow(
             title = "Priority",
@@ -164,7 +154,7 @@ fun AddTaskScreen(
             icon = Icons.Default.PriorityHigh,
             iconColor = Color(0xFFFFB4AB),
             onSelect = {
-                focusManager.clearFocus() // Clears focus to hide keyboard before showing dialog
+                focusManager.clearFocus()
                 showPriorityDialog = true
             }
         )
@@ -177,10 +167,18 @@ fun AddTaskScreen(
             icon = Icons.Default.EventRepeat,
             iconColor = Secondary,
             onSelect = {
-                focusManager.clearFocus() // Clears focus to hide keyboard before showing dialog
+                focusManager.clearFocus()
                 showRepeatDialog = true
             }
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Time cards expanded for easier accessibility
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            TimeCard(label = "Start", value = startTime, onValueChange = { startTime = it }, modifier = Modifier.weight(1f))
+            TimeCard(label = "End", value = endTime, onValueChange = { endTime = it }, modifier = Modifier.weight(1f))
+        }
 
         Spacer(modifier = Modifier.height(40.dp))
     }
@@ -238,12 +236,12 @@ private fun TimeCard(label: String, value: String, onValueChange: (String) -> Un
 
     Column(
         modifier = modifier
-            .background(Surface, RoundedCornerShape(20.dp))
-            .border(1.dp, Outline.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
-            .padding(14.dp),
+            .background(Surface, RoundedCornerShape(24.dp))
+            .border(1.dp, Outline.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+            .padding(vertical = 18.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = label, color = TextPrimary, fontWeight = FontWeight.Medium)
+        Text(text = label, color = Primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
         Spacer(modifier = Modifier.height(10.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -257,10 +255,10 @@ private fun TimeCard(label: String, value: String, onValueChange: (String) -> Un
             )
             Text(
                 text = ":",
-                color = TextPrimary,
-                fontSize = 22.sp,
+                color = Primary,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 4.dp)
+                modifier = Modifier.padding(horizontal = 2.dp)
             )
             InfiniteWheelPicker(
                 items = minuteItems,
@@ -295,7 +293,8 @@ private fun InfiniteWheelPicker(
         onItemSelected(currentCenterIndex)
     }
 
-    Box(modifier = modifier.height(120.dp), contentAlignment = Alignment.Center) {
+    // Increased layout height to fit larger elements beautifully
+    Box(modifier = modifier.height(180.dp), contentAlignment = Alignment.Center) {
         LazyColumn(
             state = listState,
             flingBehavior = flingBehavior,
@@ -306,29 +305,31 @@ private fun InfiniteWheelPicker(
                 val itemIndex = index % pageSize
                 val isSelected = itemIndex == currentCenterIndex
 
+                // Raised element height to 60.dp for larger swipe surface targets
                 Box(
-                    modifier = Modifier.height(40.dp),
+                    modifier = Modifier.height(60.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = items[itemIndex],
-                        fontSize = if (isSelected) 22.sp else 18.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) TextPrimary else TextSecondary.copy(alpha = 0.35f)
+                        fontSize = if (isSelected) 30.sp else 22.sp,
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Normal,
+                        color = if (isSelected) Primary else TextSecondary.copy(alpha = 0.35f)
                     )
                 }
             }
         }
 
+        // Dividers spaced out perfectly to frame the new 60.dp active item zone
         HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 8.dp).offset(y = (-20).dp),
-            thickness = 0.5.dp,
-            color = Outline.copy(alpha = 0.2f)
+            modifier = Modifier.padding(horizontal = 12.dp).offset(y = (-30).dp),
+            thickness = 1.dp,
+            color = Outline.copy(alpha = 0.3f)
         )
         HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 8.dp).offset(y = 20.dp),
-            thickness = 0.5.dp,
-            color = Outline.copy(alpha = 0.2f)
+            modifier = Modifier.padding(horizontal = 12.dp).offset(y = 30.dp),
+            thickness = 1.dp,
+            color = Outline.copy(alpha = 0.3f)
         )
     }
 }

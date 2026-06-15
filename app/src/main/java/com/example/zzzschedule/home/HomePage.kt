@@ -72,16 +72,16 @@ val sampleTasksForToday = listOf(
     ),
     Task(
         title = "Tennis match",
-        startTime = "18:00",
+        startTime = "18:30",
         endTime = "19:30",
         priority = "Medium",
         repeat = "Weekly",
         isTomorrow = false
     ),
     Task(
-        title = "Klain Main coffee",
+        title = "Coffee at Klain Main",
         startTime = "16:30",
-        endTime = "18:30",
+        endTime = "18:00",
         priority = "Medium",
         repeat = "Weekly",
         isTomorrow = false
@@ -89,9 +89,17 @@ val sampleTasksForToday = listOf(
     Task(
         title = "Water the plants",
         startTime = "09:00",
-        endTime = "09:30",
+        endTime = "09:15",
         priority = "Low",
         repeat = "Daily",
+        isTomorrow = false
+    ),
+    Task(
+        title = "Organize books",
+        startTime = "20:00",
+        endTime = "21:00",
+        priority = "Low",
+        repeat = "None",
         isTomorrow = false
     )
 )
