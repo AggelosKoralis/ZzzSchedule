@@ -125,6 +125,14 @@ fun HomePageNoTaskScreen(
         skipPartiallyExpanded = false
     )
 
+    // Expand bottom sheet to full screen when keyboard appears (on interaction)
+    val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
+    LaunchedEffect(isKeyboardVisible) {
+        if (isKeyboardVisible && showBottomSheet && sheetState.currentValue == SheetValue.PartiallyExpanded) {
+            sheetState.expand()
+        }
+    }
+
     val energyProgress = calculateEnergy(sleepHours.toFloat())
 
     // Helper for active task filtering
