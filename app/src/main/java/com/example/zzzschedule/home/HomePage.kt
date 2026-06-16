@@ -30,7 +30,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -108,7 +110,6 @@ fun HomePageNoTaskScreen(
     onDayChange: (String) -> Unit = {},
     onSaveNewTask: (title: String, start: String, end: String, priority: String, repeat: String, isTomorrow: Boolean) -> Unit = { _, _, _, _, _, _ -> },
     onToggleTaskCompletion: (Task) -> Unit = {},
-    // NEW CALLBACK: To handle postponing
     onPostponeTask: (oldTask: Task, newTitle: String, newStart: String, newEnd: String, newPriority: String, newRepeat: String, postponeDate: String) -> Unit = { _, _, _, _, _, _, _ -> }
 ) {
     var isPostponedExpanded by remember { mutableStateOf(false) }
@@ -118,17 +119,15 @@ fun HomePageNoTaskScreen(
     var showBottomSheet by remember { mutableStateOf(false) }
     var targetTaskDayIsTomorrow by remember { mutableStateOf(false) }
 
-    // NEW STATE: Track if we are editing/postponing a specific task
     var taskToPostpone by remember { mutableStateOf<Task?>(null) }
 
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = false
     )
 
-    // Calculate energy once to use across the UI
     val energyProgress = calculateEnergy(sleepHours.toFloat())
 
-    // Helper for task filtering
+    // Helper for active task filtering
     fun filterTasks(day: String): List<Task> {
         val todayDate = getNext7Days().getOrNull(0)
         val tomorrowDate = getNext7Days().getOrNull(1)
@@ -148,8 +147,9 @@ fun HomePageNoTaskScreen(
         }
     }
 
-    val postponedTasks = remember(tasks, selectedDay) {
-        filterTasks(selectedDay).filter { it.isPostponed }
+    // CHANGED: Filter directly from the raw tasks list to include all postponed tasks on both days
+    val postponedTasks = remember(tasks) {
+        tasks.filter { it.isPostponed }
     }
 
     Scaffold(
@@ -226,9 +226,9 @@ fun HomePageNoTaskScreen(
                 }
             }
 
-            // DAY SELECTOR (STATIC CONTAINER, SLIDING SELECTION)
             Spacer(modifier = Modifier.height(24.dp))
 
+            // DAY SELECTOR
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -244,7 +244,6 @@ fun HomePageNoTaskScreen(
                         label = "SelectionOffset"
                     )
 
-                    // Sliding indicator background
                     Box(
                         modifier = Modifier
                             .width(maxWidth / 2)
@@ -378,6 +377,8 @@ fun HomePageNoTaskScreen(
             // POSTPONED SECTION
             Spacer(modifier = Modifier.height(8.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
+                val rotationState by animateFloatAsState(targetValue = if (isPostponedExpanded) 180f else 0f, label = "Rotation")
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -388,30 +389,38 @@ fun HomePageNoTaskScreen(
                     Text(text = "Postponed", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(
-                        imageVector = if (isPostponedExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null, tint = TextSecondary
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.rotate(rotationState)
                     )
                 }
 
-                if (isPostponedExpanded) {
-                    if (postponedTasks.isEmpty()) {
-                        Text(text = "Nothing postponed yet", color = TextSecondary, modifier = Modifier.padding(vertical = 12.dp))
-                    } else {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        postponedTasks.sortedBy { it.startTime }.forEach { task ->
-                            TaskCard(
-                                title = task.title,
-                                time = "Postponed to: ${task.postponedToDate ?: "Another day"}",
-                                priority = task.priority.uppercase(),
-                                isCompleted = false,
-                                showCheckbox = false,
-                                priorityColor = when (task.priority) {
-                                    "High" -> ComposeColor(0xFFEA7467)
-                                    "Medium" -> ComposeColor(0xFFF4BC8D)
-                                    else -> ComposeColor(0xFF65C6A4)
-                                }
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
+                AnimatedVisibility(
+                    visible = isPostponedExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column {
+                        if (postponedTasks.isEmpty()) {
+                            Text(text = "Nothing postponed yet", color = TextSecondary, modifier = Modifier.padding(vertical = 12.dp))
+                        } else {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            postponedTasks.sortedBy { it.startTime }.forEach { task ->
+                                TaskCard(
+                                    title = task.title,
+                                    time = "Postponed to: ${task.postponedToDate ?: "Another day"}",
+                                    priority = task.priority.uppercase(),
+                                    isCompleted = false,
+                                    showCheckbox = false,
+                                    priorityColor = when (task.priority) {
+                                        "High" -> ComposeColor(0xFFEA7467)
+                                        "Medium" -> ComposeColor(0xFFF4BC8D)
+                                        else -> ComposeColor(0xFF65C6A4)
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
                         }
                     }
                 }
@@ -420,7 +429,6 @@ fun HomePageNoTaskScreen(
         }
     }
 
-    // add / postpone task menu
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
@@ -440,7 +448,6 @@ fun HomePageNoTaskScreen(
                 color = SurfaceLow
             ) {
                 if (taskToPostpone != null) {
-                    // Render in Postpone Mode
                     AddTaskScreen(
                         initialTitle = taskToPostpone!!.title,
                         initialStartTime = taskToPostpone!!.startTime,
@@ -461,7 +468,6 @@ fun HomePageNoTaskScreen(
                         }
                     )
                 } else {
-                    // Render in Add Mode
                     AddTaskScreen(
                         isPostponeMode = false,
                         onCancel = {
@@ -483,21 +489,11 @@ fun HomePageNoTaskScreen(
 }
 
 fun calculateEnergy(sleepQuality: Float): Float {
-    // Ensure the input stays within the 1% to 100% range
     val quality = sleepQuality.coerceIn(1f, 100f)
-
-    // 50% acts as the inflection midpoint of the curve
     val midpoint = 50f
-
-    // Adjusted steepness to ensure the curve stretches smoothly from 1 to 100
     val steepness = 0.08f
-
     val k = (quality - midpoint) * steepness
-
-    // Smooth algebraic sigmoid function
     val sigmoid = k / (1f + kotlin.math.abs(k))
-
-    // Map the result from (-1 to 1) down to a clean (0.0 to 1.0) range
     return ((sigmoid + 1f) / 2f).coerceIn(0f, 1f)
 }
 
@@ -525,7 +521,6 @@ fun TaskCard(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Main text info column takes up remaining space
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -533,7 +528,7 @@ fun TaskCard(
                         color = if (isCompleted) TextSecondary else TextPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f, fill = false) // Prevents long titles from pushing UI out
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
@@ -549,7 +544,6 @@ fun TaskCard(
                 Text(text = time, color = TextSecondary, fontSize = 13.sp)
             }
 
-            // Postpone button aligned on the same row to the right
             if (showPostpone && !isCompleted) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Box(
