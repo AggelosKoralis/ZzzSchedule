@@ -515,20 +515,31 @@ private fun InfiniteWheelPicker(
 }
 
 @Composable
-private fun SelectionRow(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, iconColor: Color, onSelect: () -> Unit) {
+private fun SelectionRow(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconColor: Color,
+    onSelect: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Surface, RoundedCornerShape(22.dp))
             .border(1.dp, Outline.copy(alpha = 0.1f), RoundedCornerShape(22.dp))
             .clip(RoundedCornerShape(22.dp))
-            .clickable(onClick = onSelect)
+            .clickable(onClick = onSelect) // Keeps the whole row clickable
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(40.dp).background(iconColor.copy(alpha = 0.15f), CircleShape), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(iconColor.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(imageVector = icon, contentDescription = null, tint = iconColor)
             }
             Spacer(modifier = Modifier.width(14.dp))
@@ -537,7 +548,21 @@ private fun SelectionRow(title: String, value: String, icon: androidx.compose.ui
                 Text(text = value, color = TextSecondary)
             }
         }
-        Text(text = "Select", color = Primary, fontWeight = FontWeight.Medium, modifier = Modifier.padding(end = 8.dp))
+
+        // Styled pill container mimicking the top "Save" button
+        Box(
+            modifier = Modifier
+                .background(Secondary, RoundedCornerShape(100.dp))
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Select",
+                color = Color(0xFF22005C),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
