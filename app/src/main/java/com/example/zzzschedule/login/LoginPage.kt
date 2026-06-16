@@ -67,7 +67,7 @@ fun LoginPageScreen(
         "Unemployed"
     )
 
-    val isUsernameValid = username.isNotBlank() && username.length <= 12
+    val isUsernameValid = username.isNotBlank() && username.length <= 20
     val isAgeValid = age.toIntOrNull()?.let { it in 13..99 } ?: false
     val isOccupationValid = occupation in occupations && occupation != "Select"
     val isFormValid = isUsernameValid && isAgeValid && isOccupationValid
@@ -140,7 +140,7 @@ fun LoginPageScreen(
                 OutlinedTextField(
                     value = username,
                     onValueChange = {
-                        if (it.length <= 12) username = it
+                        if (it.length <= 20) username = it
                     },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Enter your username") },
@@ -158,7 +158,7 @@ fun LoginPageScreen(
                     },
                     supportingText = {
                         if (showErrors && !isUsernameValid) {
-                            Text("Username cannot be empty and max 10 chars")
+                            Text("Username cannot be empty and max 20 chars")
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(

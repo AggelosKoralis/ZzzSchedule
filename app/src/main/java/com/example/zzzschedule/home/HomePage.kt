@@ -307,7 +307,7 @@ fun HomePageNoTaskScreen(
                 val activeTasksForTargetDay = remember(tasks, targetDay) {
                     filterTasks(targetDay).filter { !it.isPostponed }
                 }
-                val suggestPostponeForTargetDay = energyProgress < 0.60f && targetDay == "Today"
+                val suggestPostponeForTargetDay = energyProgress < 0.80f && targetDay == "Today"
 
                 Column {
                     if (activeTasksForTargetDay.isEmpty()) {
