@@ -28,11 +28,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import java.util.TimeZone
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.remember
 
 private val Background = Color(0xFF141317)
 private val Surface = Color(0xFF201F23)
@@ -119,7 +125,7 @@ fun AddTaskScreen(
 
         if (isPostponeMode) {
             SelectionRow(
-                title = "Postpone to Date",
+                title = "Move to Date",
                 value = postponeDay,
                 icon = Icons.Default.Event,
                 iconColor = Secondary,
@@ -128,7 +134,7 @@ fun AddTaskScreen(
                     showPostponeDialog = true
                 }
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
         }
 
         Text(text = "Task Title", color = Primary, fontWeight = FontWeight.Medium)
@@ -180,7 +186,7 @@ fun AddTaskScreen(
             TimeCard(label = "End", value = endTime, onValueChange = { endTime = it }, modifier = Modifier.weight(1f))
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(100.dp))
     }
 
     if (showPriorityDialog) {
@@ -208,16 +214,135 @@ fun AddTaskScreen(
         )
     }
     if (showPostponeDialog) {
-        SelectionDialog(
-            title = "Postpone to",
-            options = availableDates,
-            selected = postponeDay,
+        CalendarDialog(
             onDismiss = { showPostponeDialog = false },
             onSelected = {
                 postponeDay = it
                 showPostponeDialog = false
             }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CalendarDialog(
+    onDismiss: () -> Unit,
+    onSelected: (String) -> Unit
+) {
+    val datePickerState = rememberDatePickerState(
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val calendar = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                // Allow only dates after today
+                return utcTimeMillis > calendar.timeInMillis
+            }
+        }
+    )
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(//import androidx.compose.foundation.input.pointer.pointerInput
+
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .wrapContentHeight(),
+            shape = RoundedCornerShape(28.dp),
+            color = SurfaceHigh
+        ) {
+            Column(modifier = Modifier.padding(bottom = 12.dp)) {
+                // Header with buttons on top
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = Secondary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text(
+                        text = "Postpone to",
+                        color = TextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Button(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let {
+                                val sdf = SimpleDateFormat("EEE, MMM dd", Locale.getDefault())
+                                sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                                onSelected(sdf.format(java.util.Date(it)))
+                            }
+                        },
+                        shape = RoundedCornerShape(100.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Secondary, contentColor = Color(0xFF22005C))
+                    ) {
+                        Text(text = "Save", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Box(modifier = Modifier.wrapContentSize()) {
+                    DatePicker(
+                        state = datePickerState,
+                        showModeToggle = false,
+                        title = null,
+                        headline = null,
+                        colors = DatePickerDefaults.colors(
+                            containerColor = Color.Transparent,
+                            titleContentColor = TextPrimary,
+                            headlineContentColor = TextPrimary,
+                            weekdayContentColor = TextSecondary,
+                            subheadContentColor = TextSecondary,
+                            yearContentColor = TextSecondary,
+                            currentYearContentColor = Primary,
+                            selectedYearContentColor = Color(0xFF22005C),
+                            selectedYearContainerColor = Secondary,
+                            dayContentColor = TextPrimary,
+                            disabledDayContentColor = TextSecondary.copy(alpha = 0.3f),
+                            selectedDayContentColor = Color(0xFF22005C),
+                            selectedDayContainerColor = Secondary,
+                            todayContentColor = Primary,
+                            todayDateBorderColor = Primary
+                        )
+                    )
+
+                    // The Mask: Covers up the native "Month 2026 ▾" and replaces it with pure text
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            // Positioned exactly over the native month-year text row
+                            .offset(x = 16.dp, y = 12.dp)
+                            .background(SurfaceHigh) // Uses your solid background to erase what's underneath
+                            .size(width = 180.dp, height = 48.dp), // Large enough to cover long months, short enough to not block arrows
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        // Dynamically format the currently active calendar month
+                        val displayedMonthText = remember(datePickerState.displayedMonthMillis) {
+                            val sdf = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).apply {
+                                timeZone = TimeZone.getTimeZone("UTC")
+                            }
+                            sdf.format(java.util.Date(datePickerState.displayedMonthMillis))
+                        }
+
+                        Text(
+                            text = displayedMonthText,
+                            color = TextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
