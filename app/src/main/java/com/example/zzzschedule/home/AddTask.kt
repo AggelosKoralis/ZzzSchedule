@@ -34,11 +34,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import androidx.compose.material.icons.filled.Event
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
 import java.util.TimeZone
-import androidx.compose.foundation.layout.offset
-import androidx.compose.runtime.remember
 
 private val Background = Color(0xFF141317)
 private val Surface = Color(0xFF201F23)
@@ -53,6 +49,7 @@ private val TextPrimary = Color(0xFFE5E1E7)
 private val TextSecondary = Color(0xFFCAC4D0)
 
 private val Outline = Color(0xFF49454F)
+private val ErrorColor = Color(0xFFFFB4AB) // Reusing your high-priority color for error styling
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +77,17 @@ fun AddTaskScreen(
     var showPriorityDialog by remember { mutableStateOf(false) }
     var showRepeatDialog by remember { mutableStateOf(false) }
     var showPostponeDialog by remember { mutableStateOf(false) }
+
+    // --- Time Validation Logic ---
+    val isTimeInvalid = remember(startTime, endTime) {
+        val startParts = startTime.split(":")
+        val endParts = endTime.split(":")
+
+        val startMin = (startParts.getOrNull(0)?.toIntOrNull() ?: 0) * 60 + (startParts.getOrNull(1)?.toIntOrNull() ?: 0)
+        val endMin = (endParts.getOrNull(0)?.toIntOrNull() ?: 0) * 60 + (endParts.getOrNull(1)?.toIntOrNull() ?: 0)
+
+        startMin >= endMin
+    }
 
     Column(
         modifier = Modifier
@@ -112,10 +120,17 @@ fun AddTaskScreen(
             Button(
                 onClick = {
                     focusManager.clearFocus()
-                    onSave(title, startTime, endTime, priority, repeat, if (isPostponeMode) postponeDay else null)
+                    // Guard against invalid time states on submission
+                    if (!isTimeInvalid) {
+                        onSave(title, startTime, endTime, priority, repeat, if (isPostponeMode) postponeDay else null)
+                    }
                 },
                 shape = RoundedCornerShape(100.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Secondary, contentColor = Color(0xFF22005C))
+                // Visually soften the button state if time is invalid to signal it is blocked
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isTimeInvalid) Secondary.copy(alpha = 0.5f) else Secondary,
+                    contentColor = if (isTimeInvalid) Color(0xFF22005C).copy(alpha = 0.5f) else Color(0xFF22005C)
+                )
             ) {
                 Text(text = "Save", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
@@ -158,7 +173,7 @@ fun AddTaskScreen(
             title = "Priority",
             value = priority,
             icon = Icons.Default.PriorityHigh,
-            iconColor = Color(0xFFFFB4AB),
+            iconColor = ErrorColor,
             onSelect = {
                 focusManager.clearFocus()
                 showPriorityDialog = true
@@ -180,10 +195,34 @@ fun AddTaskScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Time cards expanded for easier accessibility
+        // Time cards setup with dynamic error parameters
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            TimeCard(label = "Start", value = startTime, onValueChange = { startTime = it }, modifier = Modifier.weight(1f))
-            TimeCard(label = "End", value = endTime, onValueChange = { endTime = it }, modifier = Modifier.weight(1f))
+            TimeCard(
+                label = "Start",
+                value = startTime,
+                onValueChange = { startTime = it },
+                isError = isTimeInvalid,
+                modifier = Modifier.weight(1f)
+            )
+            TimeCard(
+                label = "End",
+                value = endTime,
+                onValueChange = { endTime = it },
+                isError = isTimeInvalid,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Inline warning message rendered directly beneath the time pickers
+        if (isTimeInvalid) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "End time must be after start time",
+                color = ErrorColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
         }
 
         Spacer(modifier = Modifier.height(100.dp))
@@ -233,13 +272,12 @@ private fun CalendarDialog(
     val datePickerState = rememberDatePickerState(
         selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                val calendar = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
                     set(Calendar.HOUR_OF_DAY, 0)
                     set(Calendar.MINUTE, 0)
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }
-                // Allow only dates after today
                 return utcTimeMillis > calendar.timeInMillis
             }
         }
@@ -249,8 +287,7 @@ private fun CalendarDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Surface(//import androidx.compose.foundation.input.pointer.pointerInput
-
+        Surface(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .wrapContentHeight(),
@@ -258,7 +295,6 @@ private fun CalendarDialog(
             color = SurfaceHigh
         ) {
             Column(modifier = Modifier.padding(bottom = 12.dp)) {
-                // Header with buttons on top
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -279,7 +315,7 @@ private fun CalendarDialog(
                         onClick = {
                             datePickerState.selectedDateMillis?.let {
                                 val sdf = SimpleDateFormat("EEE, MMM dd", Locale.getDefault())
-                                sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                                sdf.timeZone = TimeZone.getTimeZone("UTC")
                                 onSelected(sdf.format(java.util.Date(it)))
                             }
                         },
@@ -315,17 +351,14 @@ private fun CalendarDialog(
                         )
                     )
 
-                    // The Mask: Covers up the native "Month 2026 ▾" and replaces it with pure text
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            // Positioned exactly over the native month-year text row
                             .offset(x = 16.dp, y = 12.dp)
-                            .background(SurfaceHigh) // Uses your solid background to erase what's underneath
-                            .size(width = 180.dp, height = 48.dp), // Large enough to cover long months, short enough to not block arrows
+                            .background(SurfaceHigh)
+                            .size(width = 180.dp, height = 48.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
-                        // Dynamically format the currently active calendar month
                         val displayedMonthText = remember(datePickerState.displayedMonthMillis) {
                             val sdf = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).apply {
                                 timeZone = TimeZone.getTimeZone("UTC")
@@ -347,7 +380,13 @@ private fun CalendarDialog(
 }
 
 @Composable
-private fun TimeCard(label: String, value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun TimeCard(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean = false, // Accepting structural validation states
+    modifier: Modifier = Modifier
+) {
     val timeParts = value.split(":")
     var hour by remember { mutableIntStateOf(timeParts.getOrNull(0)?.toIntOrNull() ?: 9) }
     var minute by remember { mutableIntStateOf(timeParts.getOrNull(1)?.toIntOrNull() ?: 0) }
@@ -362,11 +401,22 @@ private fun TimeCard(label: String, value: String, onValueChange: (String) -> Un
     Column(
         modifier = modifier
             .background(Surface, RoundedCornerShape(24.dp))
-            .border(1.dp, Outline.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+            // Tint the border color red/coral if an invalid time frame is parsed
+            .border(
+                width = 1.dp,
+                color = if (isError) ErrorColor else Outline.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(24.dp)
+            )
             .padding(vertical = 18.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = label, color = Primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        // Tint the label to grab visual focus if invalid
+        Text(
+            text = label,
+            color = if (isError) ErrorColor else Primary,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp
+        )
         Spacer(modifier = Modifier.height(10.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -375,12 +425,13 @@ private fun TimeCard(label: String, value: String, onValueChange: (String) -> Un
             InfiniteWheelPicker(
                 items = hourItems,
                 initialIndex = hour,
+                isError = isError,
                 onItemSelected = { hour = it },
                 modifier = Modifier.weight(1f)
             )
             Text(
                 text = ":",
-                color = Primary,
+                color = if (isError) ErrorColor else Primary,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 2.dp)
@@ -388,6 +439,7 @@ private fun TimeCard(label: String, value: String, onValueChange: (String) -> Un
             InfiniteWheelPicker(
                 items = minuteItems,
                 initialIndex = minute,
+                isError = isError,
                 onItemSelected = { minute = it },
                 modifier = Modifier.weight(1f)
             )
@@ -401,6 +453,7 @@ private fun InfiniteWheelPicker(
     modifier: Modifier = Modifier,
     items: List<String>,
     initialIndex: Int,
+    isError: Boolean = false,
     onItemSelected: (Int) -> Unit
 ) {
     val pageSize = items.size
@@ -418,7 +471,6 @@ private fun InfiniteWheelPicker(
         onItemSelected(currentCenterIndex)
     }
 
-    // Increased layout height to fit larger elements beautifully
     Box(modifier = modifier.height(180.dp), contentAlignment = Alignment.Center) {
         LazyColumn(
             state = listState,
@@ -430,7 +482,6 @@ private fun InfiniteWheelPicker(
                 val itemIndex = index % pageSize
                 val isSelected = itemIndex == currentCenterIndex
 
-                // Raised element height to 60.dp for larger swipe surface targets
                 Box(
                     modifier = Modifier.height(60.dp),
                     contentAlignment = Alignment.Center
@@ -439,22 +490,26 @@ private fun InfiniteWheelPicker(
                         text = items[itemIndex],
                         fontSize = if (isSelected) 30.sp else 22.sp,
                         fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Normal,
-                        color = if (isSelected) Primary else TextSecondary.copy(alpha = 0.35f)
+                        // Swap center highlight color based on validation state
+                        color = if (isSelected) {
+                            if (isError) ErrorColor else Primary
+                        } else {
+                            TextSecondary.copy(alpha = 0.35f)
+                        }
                     )
                 }
             }
         }
 
-        // Dividers spaced out perfectly to frame the new 60.dp active item zone
         HorizontalDivider(
             modifier = Modifier.padding(horizontal = 12.dp).offset(y = (-30).dp),
             thickness = 1.dp,
-            color = Outline.copy(alpha = 0.3f)
+            color = if (isError) ErrorColor.copy(alpha = 0.3f) else Outline.copy(alpha = 0.3f)
         )
         HorizontalDivider(
             modifier = Modifier.padding(horizontal = 12.dp).offset(y = 30.dp),
             thickness = 1.dp,
-            color = Outline.copy(alpha = 0.3f)
+            color = if (isError) ErrorColor.copy(alpha = 0.3f) else Outline.copy(alpha = 0.3f)
         )
     }
 }

@@ -72,8 +72,8 @@ val sampleTasksForToday = listOf(
     ),
     Task(
         title = "Tennis match",
-        startTime = "18:30",
-        endTime = "19:30",
+        startTime = "20:00",
+        endTime = "21:30",
         priority = "Medium",
         repeat = "Weekly",
         isTomorrow = false
